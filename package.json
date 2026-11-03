@@ -1,0 +1,29 @@
+{
+  "name": "sonoarchive",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Offline UCS tagging prototype",
+  "license": "MIT",
+  "author": "Bayu Adnyana",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "lint": "biome check .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "@types/node": "^26.6.6",
+    "electron": "^45.2.1",
+    "electron-vite": "^6.0.0",
+    "happy-dom": "^21.0.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  }
+}

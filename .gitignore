@@ -1,2 +1,21 @@
 # OpenSpec change proposals
 openspec/changes/
+
+# Node
+node_modules/
+out/
+dist/
+
+# Python
+python/.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+
+# Local databases
+*.db
+
+# Model weights
+*.onnx
+*.pt
+*.pth

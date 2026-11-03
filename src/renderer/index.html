@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sonoarchive</title>
+  </head>
+  <body>
+    <nav>
+      <button type="button" data-screen="library" aria-pressed="true">Library</button>
+      <button type="button" data-screen="tag" aria-pressed="false">Tag</button>
+      <button type="button" data-screen="search" aria-pressed="false">Search</button>
+    </nav>
+    <section id="library" data-panel="library">
+      <h1>Library</h1>
+    </section>
+    <section id="tag" data-panel="tag" hidden>
+      <h1>Tag</h1>
+    </section>
+    <section id="search" data-panel="search" hidden>
+      <h1>Search</h1>
+    </section>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
