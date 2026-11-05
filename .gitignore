@@ -19,3 +19,8 @@ __pycache__/
 *.onnx
 *.pt
 *.pth
+
+# Audio fixtures. The clips are EnvSound-UCS recordings and are not covered by the repo licence.
+*.wav
+*.mp3
+*.flac

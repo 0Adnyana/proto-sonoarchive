@@ -1,0 +1,207 @@
+{
+  "dataset": "EnvSound-UCS",
+  "split": "test",
+  "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+  "files": [
+    {
+      "filename": "105306.wav",
+      "source_clip_id": "105306",
+      "duration": 0.8581859410430839,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "STORM",
+      "Category": "WEATHER",
+      "SubCategory": "STORM"
+    },
+    {
+      "filename": "159764.wav",
+      "source_clip_id": "159764",
+      "duration": 0.71718820861678,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "ALRMBell",
+      "Category": "ALARMS",
+      "SubCategory": "BELL"
+    },
+    {
+      "filename": "74331.wav",
+      "source_clip_id": "74331",
+      "duration": 4.064399092970522,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "FIRECrkl",
+      "Category": "FIRE",
+      "SubCategory": "CRACKLE"
+    },
+    {
+      "filename": "173604.wav",
+      "source_clip_id": "173604",
+      "duration": 3.9554875283446713,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "ICEBrk",
+      "Category": "ICE",
+      "SubCategory": "BREAK"
+    },
+    {
+      "filename": "390718.wav",
+      "source_clip_id": "390718",
+      "duration": 1.4889795918367348,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "ICEBrk",
+      "Category": "ICE",
+      "SubCategory": "BREAK"
+    },
+    {
+      "filename": "182017.wav",
+      "source_clip_id": "182017",
+      "duration": 2.786213151927438,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "VOXLaff",
+      "Category": "VOICES",
+      "SubCategory": "LAUGH"
+    },
+    {
+      "filename": "62213.wav",
+      "source_clip_id": "62213",
+      "duration": 1.0269614512471654,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "ANMLCat",
+      "Category": "ANIMALS",
+      "SubCategory": "CAT DOMESTIC"
+    },
+    {
+      "filename": "179263.wav",
+      "source_clip_id": "179263",
+      "duration": 2.422902494331066,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "ICEBrk",
+      "Category": "ICE",
+      "SubCategory": "BREAK"
+    },
+    {
+      "filename": "274000.wav",
+      "source_clip_id": "274000",
+      "duration": 0.43072562358276645,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "WATRDrip",
+      "Category": "WATER",
+      "SubCategory": "DRIP"
+    },
+    {
+      "filename": "338129.wav",
+      "source_clip_id": "338129",
+      "duration": 7.699886621315192,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "VEHMoto",
+      "Category": "VEHICLES",
+      "SubCategory": "MOTORCYCLE"
+    },
+    {
+      "filename": "263048.wav",
+      "source_clip_id": "263048",
+      "duration": 5.973333333333334,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "FOLYHand",
+      "Category": "FOLEY",
+      "SubCategory": "HANDS"
+    },
+    {
+      "filename": "317130.wav",
+      "source_clip_id": "317130",
+      "duration": 9.029455782312926,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "STORM",
+      "Category": "WEATHER",
+      "SubCategory": "STORM"
+    },
+    {
+      "filename": "50450.wav",
+      "source_clip_id": "50450",
+      "duration": 2.5305668934240364,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "COMCam",
+      "Category": "COMMUNICATIONS",
+      "SubCategory": "CAMERA"
+    },
+    {
+      "filename": "235877.wav",
+      "source_clip_id": "235877",
+      "duration": 1.0,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "ANMLDog",
+      "Category": "ANIMALS",
+      "SubCategory": "DOG"
+    },
+    {
+      "filename": "274943.wav",
+      "source_clip_id": "274943",
+      "duration": 0.3674829931972789,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "DOORKnck",
+      "Category": "DOORS",
+      "SubCategory": "KNOCK"
+    },
+    {
+      "filename": "391910.wav",
+      "source_clip_id": "391910",
+      "duration": 3.095827664399093,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "HMNBrth",
+      "Category": "HUMAN",
+      "SubCategory": "BREATH"
+    },
+    {
+      "filename": "71560.wav",
+      "source_clip_id": "71560",
+      "duration": 1.7182766439909296,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "CLOCKTick",
+      "Category": "CLOCKS",
+      "SubCategory": "TICK"
+    },
+    {
+      "filename": "89862.wav",
+      "source_clip_id": "89862",
+      "duration": 0.9943537414965986,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "COMMic",
+      "Category": "COMMUNICATIONS",
+      "SubCategory": "MICROPHONE"
+    },
+    {
+      "filename": "257920.wav",
+      "source_clip_id": "257920",
+      "duration": 0.7602721088435375,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "HMNSneez",
+      "Category": "HUMAN",
+      "SubCategory": "SNEEZE"
+    },
+    {
+      "filename": "399663.wav",
+      "source_clip_id": "399663",
+      "duration": 3.1346938775510202,
+      "sample_rate": 44100,
+      "channels": 1,
+      "CatID": "DOORKnck",
+      "Category": "DOORS",
+      "SubCategory": "KNOCK"
+    }
+  ]
+}

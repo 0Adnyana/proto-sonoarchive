@@ -1,0 +1,502 @@
+{
+  "105306.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "DSGNBoom",
+        "score": 0.49930803906218063
+      },
+      {
+        "CatID": "SPRTSkate",
+        "score": 0.1135464772836633
+      },
+      {
+        "CatID": "FRWKRec",
+        "score": 0.08278260724457627
+      },
+      {
+        "CatID": "TOONPop",
+        "score": 0.06546898696946328
+      },
+      {
+        "CatID": "STORM",
+        "score": 0.05071552913437387
+      }
+    ]
+  },
+  "159764.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "COMMic",
+        "score": 0.7044008497728745
+      },
+      {
+        "CatID": "ALRMBell",
+        "score": 0.13296312000850807
+      },
+      {
+        "CatID": "COMTelph",
+        "score": 0.05372172783556945
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.04612703357126519
+      },
+      {
+        "CatID": "TOONClang",
+        "score": 0.024349103591350223
+      }
+    ]
+  },
+  "74331.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "FIRECrkl",
+        "score": 0.5565480500865917
+      },
+      {
+        "CatID": "PAPRFltr",
+        "score": 0.2364247143094015
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.06836010467620021
+      },
+      {
+        "CatID": "OBJWrite",
+        "score": 0.014643292499468668
+      },
+      {
+        "CatID": "HMNSkin",
+        "score": 0.013133655208820535
+      }
+    ]
+  },
+  "173604.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "ICEBrk",
+        "score": 0.8464622334485796
+      },
+      {
+        "CatID": "AMBPrisn",
+        "score": 0.13509880770879917
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.007388467894776261
+      },
+      {
+        "CatID": "VEHBike",
+        "score": 0.001985226087718084
+      },
+      {
+        "CatID": "AEROInt",
+        "score": 0.0016795133973364783
+      }
+    ]
+  },
+  "390718.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "ICEBrk",
+        "score": 0.9792340586416448
+      },
+      {
+        "CatID": "AMBPrisn",
+        "score": 0.015743117647377725
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.0031565469071214362
+      },
+      {
+        "CatID": "AEROInt",
+        "score": 0.0007514749526786702
+      },
+      {
+        "CatID": "VEHCar",
+        "score": 0.00027548331002382603
+      }
+    ]
+  },
+  "182017.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "VOXLaff",
+        "score": 0.41819369366094983
+      },
+      {
+        "CatID": "HMNSnor",
+        "score": 0.14786677527402112
+      },
+      {
+        "CatID": "HMNBrth",
+        "score": 0.10834169822980345
+      },
+      {
+        "CatID": "ANMLFarm",
+        "score": 0.07034497969346204
+      },
+      {
+        "CatID": "ANMLDog",
+        "score": 0.02996625889153982
+      }
+    ]
+  },
+  "62213.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "ANMLCat",
+        "score": 0.7977070254277636
+      },
+      {
+        "CatID": "ANMLWcat",
+        "score": 0.1972714825167105
+      },
+      {
+        "CatID": "VOXCry",
+        "score": 0.0013949766448491698
+      },
+      {
+        "CatID": "WINDInt",
+        "score": 0.0008185325422047759
+      },
+      {
+        "CatID": "ANMLInsc",
+        "score": 0.0007851468159010481
+      }
+    ]
+  },
+  "179263.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "ICEBrk",
+        "score": 0.9834783704129881
+      },
+      {
+        "CatID": "AMBPrisn",
+        "score": 0.01090336125547562
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.004737568635646023
+      },
+      {
+        "CatID": "AEROInt",
+        "score": 0.0001636690138933361
+      },
+      {
+        "CatID": "VEHBike",
+        "score": 0.00016177775541971573
+      }
+    ]
+  },
+  "274000.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "COMType",
+        "score": 0.16885616628388914
+      },
+      {
+        "CatID": "COMMic",
+        "score": 0.12280843020273036
+      },
+      {
+        "CatID": "FOLYHand",
+        "score": 0.10837172881106735
+      },
+      {
+        "CatID": "HMNBurp",
+        "score": 0.09227154439660591
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.06228370973214636
+      }
+    ]
+  },
+  "338129.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "VEHMoto",
+        "score": 0.7633795200171645
+      },
+      {
+        "CatID": "MOTRComb",
+        "score": 0.041411024550450794
+      },
+      {
+        "CatID": "VEHSkid",
+        "score": 0.040617727009981223
+      },
+      {
+        "CatID": "AEROHeli",
+        "score": 0.03591246779967346
+      },
+      {
+        "CatID": "CLOTHFlp",
+        "score": 0.021568428905788358
+      }
+    ]
+  },
+  "263048.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "GAMEMisc",
+        "score": 0.4981695662797418
+      },
+      {
+        "CatID": "COMMic",
+        "score": 0.09886506142085497
+      },
+      {
+        "CatID": "OBJWrite",
+        "score": 0.06840381817996395
+      },
+      {
+        "CatID": "FOLYHand",
+        "score": 0.05574651843574618
+      },
+      {
+        "CatID": "AEROInt",
+        "score": 0.03367083070516834
+      }
+    ]
+  },
+  "317130.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "AMBInsc",
+        "score": 0.5095548085007301
+      },
+      {
+        "CatID": "ANMLInsc",
+        "score": 0.3602016084561122
+      },
+      {
+        "CatID": "AMBSprt",
+        "score": 0.09713673122278049
+      },
+      {
+        "CatID": "ANMLAmph",
+        "score": 0.017721846838376035
+      },
+      {
+        "CatID": "ANMLRept",
+        "score": 0.006259997981655965
+      }
+    ]
+  },
+  "50450.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "COMCam",
+        "score": 0.9959118354306415
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.0007331615734496995
+      },
+      {
+        "CatID": "TOOLHand",
+        "score": 0.0006901139038002098
+      },
+      {
+        "CatID": "AEROInt",
+        "score": 0.0005189674056097683
+      },
+      {
+        "CatID": "CLOCKTick",
+        "score": 0.0004934843411166398
+      }
+    ]
+  },
+  "235877.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "ANMLDog",
+        "score": 0.9794248826162878
+      },
+      {
+        "CatID": "HMNBrth",
+        "score": 0.003181141025982334
+      },
+      {
+        "CatID": "DSGNVocl",
+        "score": 0.0028278958849050004
+      },
+      {
+        "CatID": "SPRTSkate",
+        "score": 0.0028006745245611497
+      },
+      {
+        "CatID": "VOXCry",
+        "score": 0.0027790636937498055
+      }
+    ]
+  },
+  "274943.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "COMType",
+        "score": 0.16350523057554717
+      },
+      {
+        "CatID": "COMMic",
+        "score": 0.1231735885217011
+      },
+      {
+        "CatID": "FOLYHand",
+        "score": 0.11918025505170933
+      },
+      {
+        "CatID": "HMNBurp",
+        "score": 0.09310791405806736
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.06220290363349947
+      }
+    ]
+  },
+  "391910.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "AIRHiss",
+        "score": 0.9207144405271213
+      },
+      {
+        "CatID": "HMNBrth",
+        "score": 0.033761130565089066
+      },
+      {
+        "CatID": "HMNSnor",
+        "score": 0.022176634567826533
+      },
+      {
+        "CatID": "ANMLInsc",
+        "score": 0.007783836343360202
+      },
+      {
+        "CatID": "TOOLPowr",
+        "score": 0.005320883515655744
+      }
+    ]
+  },
+  "71560.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "GORESqsh",
+        "score": 0.10246410885489217
+      },
+      {
+        "CatID": "CLOTHFlp",
+        "score": 0.06585401687143302
+      },
+      {
+        "CatID": "OBJWrite",
+        "score": 0.0625103795454
+      },
+      {
+        "CatID": "WATRSpray",
+        "score": 0.05625641800625708
+      },
+      {
+        "CatID": "COMTv",
+        "score": 0.0547855821538584
+      }
+    ]
+  },
+  "89862.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "CLOCKTick",
+        "score": 0.1175170440574957
+      },
+      {
+        "CatID": "COMMic",
+        "score": 0.10710321692536312
+      },
+      {
+        "CatID": "HMNBurp",
+        "score": 0.07647435711415554
+      },
+      {
+        "CatID": "FIRECrkl",
+        "score": 0.07293341508129955
+      },
+      {
+        "CatID": "FOLYHand",
+        "score": 0.0700986889933515
+      }
+    ]
+  },
+  "257920.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "VOXLaff",
+        "score": 0.13732375384790543
+      },
+      {
+        "CatID": "HMNBurp",
+        "score": 0.12394276484156799
+      },
+      {
+        "CatID": "HMNCough",
+        "score": 0.10686539165909278
+      },
+      {
+        "CatID": "FOLYHand",
+        "score": 0.09683525358120618
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.055917177245311006
+      }
+    ]
+  },
+  "399663.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "DOORKnck",
+        "score": 0.6256991470100444
+      },
+      {
+        "CatID": "COMMic",
+        "score": 0.3407208273992644
+      },
+      {
+        "CatID": "FOLYMisc",
+        "score": 0.020441011714310786
+      },
+      {
+        "CatID": "WATRDrip",
+        "score": 0.00770056767648013
+      },
+      {
+        "CatID": "CLOCKTick",
+        "score": 0.003147263780492257
+      }
+    ]
+  }
+}

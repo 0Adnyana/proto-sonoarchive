@@ -16,7 +16,7 @@ The UI uses plain default components (table, radio list, text inputs, buttons) a
 | Area | In the MVP | Out of the MVP |
 | --- | --- | --- |
 | Platform | Electron desktop app (Windows, macOS, Linux) | Web or mobile versions |
-| Model | Frozen PANNs CNN14 embedding + linear probe over 453 UCS subcategories | Fine-tuning CNN14, other encoders |
+| Model | Frozen PANNs CNN14 embedding + linear probe over the 753 UCS v8.2.1 CatIDs | Fine-tuning CNN14, other encoders |
 | Retraining | Linear probe only, via the Python backend | Retraining the encoder |
 | Tagging | Top-5 CatID suggestions; user confirms one and types FXName, CreatorID, SourceID | Automatic FXName, auto-accepting labels |
 | Formats | WAV, MP3, FLAC | Other formats |
@@ -52,7 +52,7 @@ Tagging runs fully offline inside Electron through ONNX Runtime; Python is neede
 The worker runs off the main process so analysis never freezes the window.
 
 - **Encoder:** PANNs CNN14 (Kong et al., 2020), frozen, exported once to ONNX. Input is mono audio resampled to 32 kHz; output is a 2048-d embedding per file. Files over 10 s are split into 10 s windows (50% overlap); window scores are averaged for the top-5, and window embeddings are averaged for similarity search.
-- **Probe:** one linear layer, 2048 → 453 UCS v8.2.1 subcategories (CatIDs), softmax scores. Stored as a small separate file with its label list and a version, so it can be swapped without touching the encoder.
+- **Probe:** one linear layer, 2048 → 753 UCS v8.2.1 CatIDs, softmax scores. Stored as a small separate file with its label list and a version, so it can be swapped without touching the encoder.
 - **Category:** looked up from the predicted CatID, not predicted separately, as in Beck & Lerch (2026).
 - **Suggestions:** the 5 highest-scoring CatIDs, shown with their scores.
 - **Retraining:** the backend fits the probe on stored embeddings of the training sets plus the user's confirmed labels, exports new weights, and the worker reloads them. The encoder is never retrained, so no audio needs re-embedding.
@@ -76,7 +76,7 @@ Three screens in one window, switched by plain tabs at the top. Default componen
 | Screen | Components | What it does |
 | --- | --- | --- |
 | Library | *Import folder* button, table (file name, format, duration, status, CatID), status text for background analysis | Lists imported files; selecting a row opens it in Tag |
-| Tag | File name + *Play/Stop* button; radio list of 5 suggestions (CatID, Category › SubCategory, score); *Other…* dropdown with all 453 CatIDs; text inputs for FXName, CreatorID, SourceID; Rename to UCS filename checkbox with a preview of the new name; *Save* and *Next file* buttons | Confirms one label and writes metadata |
+| Tag | File name + *Play/Stop* button; radio list of 5 suggestions (CatID, Category › SubCategory, score); *Other…* dropdown with all 753 CatIDs; text inputs for FXName, CreatorID, SourceID; Rename to UCS filename checkbox with a preview of the new name; *Save* and *Next file* buttons | Confirms one label and writes metadata |
 | Search | Text input + *Search* button; *Find similar to selected file* button; results table (file, CatID, FXName, similarity) | Text search and embedding similarity search |
 
 Retraining sits on the Library screen as a *Retrain probe* button with a status line (running, done with date, or error). Save is disabled until a CatID is chosen and FXName is not empty.
@@ -101,7 +101,7 @@ The writer keeps all existing audio data and other chunks/tags untouched, and wr
 - `embeddings`: file id, 2048-d CNN14 vector stored as float32 (about 8 KB per file) in a sqlite-vec vec0 table
 - `suggestions`: file id, rank 1–5, CatID, score, probe version
 - `labels`: file id, CatID, FXName, CreatorID, SourceID, chosen rank (1–5 or manual), timestamp
-- `ucs`: the 453 UCS v8.2.1 rows (CatID, Category, SubCategory, explanation, synonyms)
+- `ucs`: the 753 UCS v8.2.1 rows (CatID, Category, SubCategory, explanation, synonyms), loaded from `fixtures/UCS v8.2.1 Full List.xlsx`
 
 **Training data for the probe:** the prototype ships with the existing trained probe. Retraining uses EnvSound-UCS (Beck & Lerch, 2026) and FoleySet (Wang & Lerch, 2026), plus the user's confirmed labels.
 

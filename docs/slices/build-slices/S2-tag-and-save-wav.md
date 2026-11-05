@@ -4,7 +4,7 @@
 
 ## Scope
 
-- Tag screen: file name, *Play/Stop*, radio list of 5 suggestions (CatID, Category › SubCategory, score), *Other…* dropdown with all 453 CatIDs, inputs for FXName, CreatorID, SourceID, *Save* and *Next file*.
+- Tag screen: file name, *Play/Stop*, radio list of 5 suggestions (CatID, Category › SubCategory, score), *Other…* dropdown with all 753 CatIDs, inputs for FXName, CreatorID, SourceID, *Save* and *Next file*.
 - *Save* is disabled until a CatID is chosen and FXName is not empty.
 - `labels` table: CatID, FXName, CreatorID, SourceID, chosen rank (1–5 or manual), timestamp. File status becomes *tagged*.
 - WAV writer: one tag per field in the iXML USER block; FXName also in the bext Description. Category and SubCategory come from the `ucs` table.

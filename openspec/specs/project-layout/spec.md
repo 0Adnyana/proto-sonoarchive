@@ -20,14 +20,14 @@ The repository SHALL contain separate source directories for the Electron main p
 - **WHEN** a developer lists the Python project
 - **THEN** `python/pyproject.toml` exists and the importable package lives at `python/src/sonoarchive`
 
-### Requirement: Asset directories exist empty
+### Requirement: Model and fixture directories exist
 
-The repository SHALL contain `models/`, `fixtures/`, and `scripts/` as tracked directories with no model weights, audio fixtures, or analysis scripts in them.
+The repository SHALL contain `models/` and `fixtures/`. Offline model commands live in the Python package, not in a top-level `scripts/` directory. Checkpoint files (`.onnx`, `.pt`, `.pth`) stay untracked.
 
-#### Scenario: Placeholder directories are tracked
+#### Scenario: Asset directories are present
 
 - **WHEN** a developer clones the repository
-- **THEN** `models/`, `fixtures/`, and `scripts/` are present and contain no `.onnx`, `.pt`, `.pth`, or audio files
+- **THEN** `models/` and `fixtures/` exist and there is no top-level `scripts/` directory
 
 ### Requirement: Generated and local files are ignored
 

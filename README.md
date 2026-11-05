@@ -26,3 +26,12 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 python -m pytest
 ```
+
+The offline model commands need the extra `offline` dependencies (`pip install -e ".[offline]"`). From `python/`:
+
+```bash
+python -m sonoarchive.export_cnn14
+python -m sonoarchive.export_probe
+python -m sonoarchive.fref
+python -m sonoarchive.parity
+```

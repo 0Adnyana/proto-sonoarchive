@@ -15,7 +15,7 @@
 | ID | Story | Acceptance criteria |
 | --- | --- | --- |
 | US-04 | As a sound designer, I want to hear a file and see its top 5 suggestions, so that I can judge which label fits. | Selecting a row in Library opens the file in Tag. *Play/Stop* plays the file. A radio list shows 5 suggestions, highest score first, each with CatID, Category › SubCategory and score. |
-| US-05 | As a sound designer, I want to pick any UCS label when none of the 5 fits, so that I am never forced into a wrong tag. | *Other…* dropdown lists all 453 UCS v8.2.1 CatIDs. Picking one replaces the radio choice. |
+| US-05 | As a sound designer, I want to pick any UCS label when none of the 5 fits, so that I am never forced into a wrong tag. | *Other…* dropdown lists all 753 UCS v8.2.1 CatIDs. Picking one replaces the radio choice. |
 | US-06 | As a sound designer, I want to type FXName, CreatorID and SourceID, so that the file carries the full UCS description. | Three text inputs. *Save* stays disabled until a CatID is chosen and FXName is not empty. |
 | US-07 | As a sound designer, I want to move straight to the next file, so that I can tag a folder in one sitting. | *Next file* opens the next untagged file in Library order. |
 
