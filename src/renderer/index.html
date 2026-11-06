@@ -5,33 +5,7 @@
     <title>Sonoarchive</title>
   </head>
   <body>
-    <nav>
-      <button type="button" data-screen="library" aria-pressed="true">Library</button>
-      <button type="button" data-screen="tag" aria-pressed="false">Tag</button>
-      <button type="button" data-screen="search" aria-pressed="false">Search</button>
-    </nav>
-    <section id="library" data-panel="library">
-      <h1>Library</h1>
-      <button type="button" id="import-folder">Import folder</button>
-      <p data-library-status role="status"></p>
-      <table>
-        <thead>
-          <tr>
-            <th>File name</th>
-            <th>Format</th>
-            <th>Duration (seconds)</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody data-library-rows></tbody>
-      </table>
-    </section>
-    <section id="tag" data-panel="tag" hidden>
-      <h1>Tag</h1>
-    </section>
-    <section id="search" data-panel="search" hidden>
-      <h1>Search</h1>
-    </section>
-    <script type="module" src="/main.ts"></script>
+    <div id="root"></div>
+    <script type="module" src="/main.tsx"></script>
   </body>
 </html>

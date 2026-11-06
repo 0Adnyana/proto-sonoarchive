@@ -9,7 +9,11 @@
     "isolatedModules": true,
     "types": ["node"],
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/renderer/*"]
+    }
   },
   "include": ["src/renderer/**/*", "src/shared/**/*"]
 }

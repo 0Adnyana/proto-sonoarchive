@@ -8,12 +8,17 @@ TBD
 
 ### Requirement: Desktop shell opens three empty screens
 
-The desktop app SHALL open one window with three screens named Library, Tag, and Search. Each screen SHALL be selectable from a tab. The Library screen SHALL show the import control and the files stored by this app. The Tag and Search screens SHALL show no imported files.
+The desktop app SHALL open one window with three screens named Library, Tag, and Search. Each screen SHALL be selectable from a tab. Those screens SHALL appear after the React renderer starts. The Library screen SHALL show the import control and the files stored by this app. The Tag and Search screens SHALL show no imported files.
 
 #### Scenario: Renderer lists the three screens
 
-- **WHEN** the renderer HTML is loaded
+- **WHEN** the React renderer has started
 - **THEN** it contains a tab and a panel for Library, a tab and a panel for Tag, and a tab and a panel for Search
+
+#### Scenario: The HTML document is a mount point
+
+- **WHEN** the renderer HTML is read before the script runs
+- **THEN** it contains one mount node and does not contain a tab or a panel for Library, Tag, or Search
 
 #### Scenario: Selecting a tab shows that screen
 
