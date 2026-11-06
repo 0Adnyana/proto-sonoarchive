@@ -12,6 +12,19 @@
     </nav>
     <section id="library" data-panel="library">
       <h1>Library</h1>
+      <button type="button" id="import-folder">Import folder</button>
+      <p data-library-status role="status"></p>
+      <table>
+        <thead>
+          <tr>
+            <th>File name</th>
+            <th>Format</th>
+            <th>Duration (seconds)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody data-library-rows></tbody>
+      </table>
     </section>
     <section id="tag" data-panel="tag" hidden>
       <h1>Tag</h1>

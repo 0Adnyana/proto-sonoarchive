@@ -28,6 +28,29 @@ describe('renderer screens', () => {
     }
   })
 
+  it('shows import controls and file columns on Library only', () => {
+    const headers = [
+      ...document.querySelectorAll('[data-panel="library"] th'),
+    ].map((header) => header.textContent)
+    expect(headers).toEqual([
+      'File name',
+      'Format',
+      'Duration (seconds)',
+      'Status',
+    ])
+    expect(document.querySelector('#import-folder')?.textContent).toBe(
+      'Import folder',
+    )
+    expect(document.querySelector('[data-library-status]')).not.toBeNull()
+
+    for (const screen of ['tag', 'search']) {
+      const panel = document.querySelector(`[data-panel="${screen}"]`)
+      expect(panel?.querySelector('table')).toBeNull()
+      expect(panel?.querySelector('#import-folder')).toBeNull()
+      expect(panel?.textContent).not.toContain('Import folder')
+    }
+  })
+
   it('shows Tag and hides Library and Search', () => {
     selectScreen(document, 'tag')
 

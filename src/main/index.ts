@@ -1,19 +1,86 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   app,
   BrowserWindow,
+  dialog,
   ipcMain,
   type UtilityProcess,
   utilityProcess,
 } from 'electron'
-import { ipcChannels, isPingSuccess, type PingSuccess } from '../shared/ipc'
+import {
+  type ImportFolderResult,
+  ipcChannels,
+  isPingSuccess,
+  type LibraryFile,
+  type PingSuccess,
+} from '../shared/ipc'
 import workerPath from '../worker/index?modulePath'
+import { type LibraryDatabase, listFiles, openLibrary } from './database'
+import { importWavFolder } from './import-wavs'
+
+const UCS_FILE = 'UCS v8.2.1 Full List.xlsx'
 
 const preloadPath = fileURLToPath(
   new URL('../preload/index.mjs', import.meta.url),
 )
 
 let worker: UtilityProcess | undefined
+let library: LibraryDatabase | undefined
+let libraryError: Error | undefined
+
+function ucsWorkbookPath(): string | undefined {
+  const candidates = [
+    join(app.getAppPath(), 'fixtures', UCS_FILE),
+    join(process.cwd(), 'fixtures', UCS_FILE),
+  ]
+  return candidates.find((candidate) => existsSync(candidate))
+}
+
+function openAppLibrary(): void {
+  try {
+    library = openLibrary(
+      join(app.getPath('userData'), 'library.db'),
+      ucsWorkbookPath(),
+    )
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'unknown error'
+    libraryError = new Error(`Could not open the library. ${detail}`)
+    console.error(libraryError)
+  }
+}
+
+function requireLibrary(): LibraryDatabase {
+  if (!library) {
+    throw libraryError ?? new Error('Could not open the library.')
+  }
+  return library
+}
+
+function registerLibraryHandlers(): void {
+  ipcMain.handle(ipcChannels.listLibrary, (): LibraryFile[] => {
+    return listFiles(requireLibrary())
+  })
+
+  ipcMain.handle(
+    ipcChannels.importFolder,
+    async (event): Promise<ImportFolderResult | null> => {
+      const db = requireLibrary()
+      const parent = BrowserWindow.fromWebContents(event.sender)
+      const picked = parent
+        ? await dialog.showOpenDialog(parent, {
+            properties: ['openDirectory'],
+          })
+        : await dialog.showOpenDialog({ properties: ['openDirectory'] })
+      const folder = picked.filePaths[0]
+      if (picked.canceled || !folder) return null
+      const result = await importWavFolder(db, folder)
+      event.sender.send(ipcChannels.libraryChanged, listFiles(db))
+      return { stored: result.stored, failed: result.failed }
+    },
+  )
+}
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -70,6 +137,8 @@ function startWorker(): UtilityProcess {
 
 void app.whenReady().then(() => {
   worker = startWorker()
+  openAppLibrary()
+  registerLibraryHandlers()
   createWindow()
 
   app.on('activate', () => {
@@ -83,4 +152,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   worker?.kill()
+  library?.close()
 })
