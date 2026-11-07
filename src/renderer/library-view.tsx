@@ -33,6 +33,7 @@ export function LibraryView({ files, status, onImport }: LibraryViewProps) {
             <TableHead>Format</TableHead>
             <TableHead>Duration (seconds)</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>CatID</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -42,6 +43,7 @@ export function LibraryView({ files, status, onImport }: LibraryViewProps) {
               <TableCell>{file.format}</TableCell>
               <TableCell>{formatDurationSeconds(file.duration)}</TableCell>
               <TableCell>{file.status}</TableCell>
+              <TableCell>{file.catId ?? ''}</TableCell>
             </TableRow>
           ))}
         </TableBody>

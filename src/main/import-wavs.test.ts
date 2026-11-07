@@ -35,6 +35,8 @@ describe('wav import', () => {
         format: 'wav',
         duration: stored?.duration,
         status: 'untagged',
+        catId: null,
+        suggestions: [],
       },
     ])
     reopened.close()

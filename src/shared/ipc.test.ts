@@ -30,9 +30,27 @@ describe('ipc', () => {
       format: 'wav',
       duration: 1,
       status: 'untagged',
+      catId: null,
+      suggestions: [],
     }
+    const suggestions = [
+      { catId: 'AIRBlow', score: 0.5 },
+      { catId: 'AIRBrst', score: 0.25 },
+      { catId: 'AIRHiss', score: 0.125 },
+      { catId: 'AIRMisc', score: 0.0625 },
+      { catId: 'AIRSuck', score: 0.03125 },
+    ]
     expect(isLibraryFileList([file])).toBe(true)
+    expect(
+      isLibraryFileList([{ ...file, catId: 'AIRBlow', suggestions }]),
+    ).toBe(true)
     expect(isLibraryFileList([{ ...file, format: 'mp3' }])).toBe(false)
+    expect(isLibraryFileList([{ ...file, catId: 'AIRBlow' }])).toBe(false)
+    expect(
+      isLibraryFileList([
+        { ...file, suggestions: [{ catId: 'AIRBlow', score: Number.NaN }] },
+      ]),
+    ).toBe(false)
     expect(isImportFolderResult({ stored: 1, failed: ['bad.wav'] })).toBe(true)
     expect(isImportFolderResult({ stored: 1, failed: [1] })).toBe(false)
   })

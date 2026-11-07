@@ -17,6 +17,23 @@ const tone: LibraryFile = {
   format: 'wav',
   duration: 1.5,
   status: 'untagged',
+  catId: null,
+  suggestions: [],
+}
+
+const scored: LibraryFile = {
+  name: 'door.wav',
+  format: 'wav',
+  duration: 2,
+  status: 'untagged',
+  catId: 'AERODoor',
+  suggestions: [
+    { catId: 'AERODoor', score: 0.5 },
+    { catId: 'AEROHeli', score: 0.25 },
+    { catId: 'AEROInt', score: 0.125 },
+    { catId: 'AEROJet', score: 0.0625 },
+    { catId: 'AEROMech', score: 0.03125 },
+  ],
 }
 
 describe('library screen', () => {
@@ -28,13 +45,14 @@ describe('library screen', () => {
     render(<App bridge={bridge({ listLibrary: async () => [tone] })} />)
 
     expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
-    expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged'])
+    expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged', ''])
     expect(screen.getByRole('columnheader', { name: 'File name' })).toBeTruthy()
     expect(screen.getByRole('columnheader', { name: 'Format' })).toBeTruthy()
     expect(
       screen.getByRole('columnheader', { name: 'Duration (seconds)' }),
     ).toBeTruthy()
     expect(screen.getByRole('columnheader', { name: 'Status' })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: 'CatID' })).toBeTruthy()
   })
 
   it('reports a stored import and names a file that failed', async () => {
@@ -81,7 +99,7 @@ describe('library screen', () => {
     })
 
     expect(screen.getByRole('status').textContent).toBe('')
-    expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged'])
+    expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged', ''])
   })
 
   it('replaces the table when the library changes and keeps it across tabs', async () => {
@@ -115,7 +133,43 @@ describe('library screen', () => {
     expect(screen.queryByRole('table')).toBeNull()
 
     selectTab('Library')
-    expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged'])
+    expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged', ''])
+  })
+
+  it('shows a top-1 CatID and hides file names on the other tabs', async () => {
+    render(<App bridge={bridge({ listLibrary: async () => [tone, scored] })} />)
+
+    expect(await screen.findByRole('cell', { name: 'AERODoor' })).toBeTruthy()
+    expect(cellText()).toEqual([
+      'tone.wav',
+      'wav',
+      '1.5',
+      'untagged',
+      '',
+      'door.wav',
+      'wav',
+      '2',
+      'untagged',
+      'AERODoor',
+    ])
+
+    selectTab('Tag')
+    expect(
+      screen.getByRole('tabpanel', { name: 'Tag' }).textContent,
+    ).not.toContain('tone.wav')
+    expect(
+      screen.getByRole('tabpanel', { name: 'Tag' }).textContent,
+    ).not.toContain('door.wav')
+    expect(screen.queryByRole('table')).toBeNull()
+
+    selectTab('Search')
+    expect(
+      screen.getByRole('tabpanel', { name: 'Search' }).textContent,
+    ).not.toContain('tone.wav')
+    expect(
+      screen.getByRole('tabpanel', { name: 'Search' }).textContent,
+    ).not.toContain('door.wav')
+    expect(screen.queryByRole('table')).toBeNull()
   })
 
   it('shows a database failure on the status line', async () => {

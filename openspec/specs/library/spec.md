@@ -8,12 +8,17 @@ TBD
 
 ### Requirement: Library lists imported files
 
-The Library screen SHALL show a table with one row per stored file and the columns file name, format, duration, and status. Duration SHALL be shown in seconds. Tag and Search SHALL show no imported files.
+The Library screen SHALL show a table with one row per stored file and the columns file name, format, duration, status, and CatID. Duration SHALL be shown in seconds. CatID SHALL be the stored top-1 CatID, or empty when that file has no suggestions. Tag and Search SHALL show no imported files.
 
 #### Scenario: Imported files appear as untagged
 
-- **WHEN** a folder of WAV files has been imported
-- **THEN** each stored file is listed with its name, format `wav`, duration, and status *untagged*
+- **WHEN** a folder of WAV files has been imported and none of those files has suggestions
+- **THEN** each stored file is listed with its name, format `wav`, duration, status *untagged*, and an empty CatID
+
+#### Scenario: A file with suggestions shows its top-1 CatID
+
+- **WHEN** a stored file has a rank-1 suggestion
+- **THEN** its CatID cell shows that CatID and its status is *untagged*
 
 ### Requirement: Import results stay visible
 
@@ -31,12 +36,17 @@ The Library screen SHALL show a status line for the import. The window SHALL rem
 
 ### Requirement: Files survive a restart
 
-Stored files SHALL be read back from the local database when the app opens. Quitting SHALL NOT delete them.
+Stored files and their suggestions SHALL be read back from the local database when the app opens. Quitting SHALL NOT delete them.
 
 #### Scenario: Reopen shows the same rows
 
 - **WHEN** the user quits after WAV files have been imported, then opens the app again
 - **THEN** the same files are listed with the same names, format, durations, and status *untagged*
+
+#### Scenario: Reopen shows stored top-1 CatIDs
+
+- **WHEN** the user quits after suggestions have been stored, then opens the app again
+- **THEN** those files are listed with the same top-1 CatIDs and status *untagged*
 
 ### Requirement: The UCS catalog is stored
 

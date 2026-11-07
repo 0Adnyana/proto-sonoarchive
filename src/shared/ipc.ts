@@ -13,11 +13,18 @@ export type PingSuccess = {
   ok: true
 }
 
+export type Suggestion = {
+  catId: string
+  score: number
+}
+
 export type LibraryFile = {
   name: string
   format: 'wav'
   duration: number
   status: 'untagged'
+  catId: string | null
+  suggestions: Suggestion[]
 }
 
 export type ImportFolderResult = {
@@ -40,15 +47,31 @@ export function isPingSuccess(message: unknown): message is PingSuccess {
   return isRecord(message) && message.ok === true
 }
 
-export function isLibraryFile(value: unknown): value is LibraryFile {
+function isSuggestion(value: unknown): value is Suggestion {
   return (
     isRecord(value) &&
-    typeof value.name === 'string' &&
-    value.format === 'wav' &&
-    typeof value.duration === 'number' &&
-    Number.isFinite(value.duration) &&
-    value.status === 'untagged'
+    typeof value.catId === 'string' &&
+    value.catId.length > 0 &&
+    typeof value.score === 'number' &&
+    Number.isFinite(value.score)
   )
+}
+
+export function isLibraryFile(value: unknown): value is LibraryFile {
+  if (!isRecord(value)) return false
+  const { name, format, duration, status, catId, suggestions } = value
+  if (typeof name !== 'string') return false
+  if (format !== 'wav') return false
+  if (typeof duration !== 'number' || !Number.isFinite(duration)) return false
+  if (status !== 'untagged') return false
+  if (catId !== null && (typeof catId !== 'string' || catId.length === 0)) {
+    return false
+  }
+  if (!Array.isArray(suggestions) || !suggestions.every(isSuggestion)) {
+    return false
+  }
+  if (catId === null) return suggestions.length === 0
+  return suggestions.length === 5 && suggestions[0]?.catId === catId
 }
 
 export function isLibraryFileList(value: unknown): value is LibraryFile[] {

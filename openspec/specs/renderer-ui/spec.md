@@ -32,7 +32,7 @@ The repository SHALL install shadcn for the renderer and SHALL include its butto
 #### Scenario: Import and the file table are on Library only
 
 - **WHEN** the Library screen is shown
-- **THEN** it shows an *Import folder* control and a table whose headers are File name, Format, Duration (seconds), and Status, and Tag and Search show neither the control nor the table
+- **THEN** it shows an *Import folder* control and a table whose headers are File name, Format, Duration (seconds), Status, and CatID, and Tag and Search show neither the control nor the table
 
 ### Requirement: Library view follows the preload bridge
 
@@ -62,3 +62,17 @@ The Library view SHALL load files through the preload bridge, SHALL start an imp
 
 - **WHEN** listing the library fails
 - **THEN** the status line includes the failure message
+
+### Requirement: Library view shows the top-1 CatID from the bridge
+
+The Library table SHALL show each row's top-1 CatID from the preload bridge. The CatID cell SHALL be empty when that row has no suggestions. Status SHALL still be shown as *untagged*.
+
+#### Scenario: A suggestion fills the CatID cell
+
+- **WHEN** the bridge lists a file whose top-1 CatID is present
+- **THEN** the CatID cell shows that CatID and the status cell is *untagged*
+
+#### Scenario: No suggestion leaves the CatID cell empty
+
+- **WHEN** the bridge lists a file with no suggestions
+- **THEN** the CatID cell is empty and the status cell is *untagged*

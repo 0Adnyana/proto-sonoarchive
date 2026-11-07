@@ -30,5 +30,6 @@ describe('renderer bridge', () => {
     expect(bundle).toContain('externalizeDeps: true')
     expect(bundle).toContain('better-sqlite3')
     expect(bundle).toContain('ffmpeg-static')
+    expect(bundle).toContain('sqlite-vec')
   })
 })

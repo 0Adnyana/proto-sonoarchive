@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'electron-vite'
 
-const externalNative = ['better-sqlite3', 'ffmpeg-static']
+const externalNative = ['better-sqlite3', 'ffmpeg-static', 'sqlite-vec']
 const rendererRoot = fileURLToPath(new URL('./src/renderer', import.meta.url))
 
 export default defineConfig({
