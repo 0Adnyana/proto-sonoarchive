@@ -5,7 +5,7 @@ import type { ProbeVectors } from '../main/probe'
 import { scoreEmbedding } from '../main/probe'
 import type { AnalysisPayload } from '../shared/ipc'
 import { readProbeFile } from './probe-file'
-import { decodeWavWaveform } from './waveform'
+import { decodeWavWaveform, WAVEFORM_RATE } from './waveform'
 
 const EMBEDDING_DIM = 2048
 
@@ -69,21 +69,32 @@ async function embedWaveform(
   waveform: Float32Array,
 ): Promise<Float32Array> {
   const session = await sessionFor(modelPath)
-  const tensor = new ort.Tensor('float32', waveform, [1, waveform.length])
+  const samples = padToOneSecond(waveform)
+  const tensor = new ort.Tensor('float32', samples, [1, samples.length])
   try {
     const results = await session.run({ waveform: tensor })
     const output = results.embedding
-    const samples = output?.type === 'float32' ? output.data : undefined
+    const embedded = output?.type === 'float32' ? output.data : undefined
     if (
-      !(samples instanceof Float32Array) ||
-      samples.length !== EMBEDDING_DIM
+      !(embedded instanceof Float32Array) ||
+      embedded.length !== EMBEDDING_DIM
     ) {
       throw new Error('CNN14 returned an unexpected embedding')
     }
-    return new Float32Array(samples)
+    return new Float32Array(embedded)
   } finally {
     tensor.dispose()
+    if (samples !== waveform) samples.fill(0)
   }
+}
+
+// Traced on one second of zeros. Shorter buffers disagree with PyTorch until
+// they are padded with silence to that length.
+function padToOneSecond(waveform: Float32Array): Float32Array {
+  if (waveform.length >= WAVEFORM_RATE) return waveform
+  const padded = new Float32Array(WAVEFORM_RATE)
+  padded.set(waveform)
+  return padded
 }
 
 async function sessionFor(modelPath: string): Promise<ort.InferenceSession> {

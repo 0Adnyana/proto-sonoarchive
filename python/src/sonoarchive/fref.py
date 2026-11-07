@@ -2,8 +2,9 @@
 
     python -m sonoarchive.fref
 
-Each file in F-short is loaded as 32 kHz mono, embedded with CNN14, and scored
-with ``models/probe.json``. Writes ``fixtures/F-ref/embeddings.npz`` and
+Each file in F-short is loaded as 32 kHz mono. Clips shorter than one second
+are zero-padded at the end to 32000 samples, then embedded with CNN14 and
+scored with ``models/probe.json``. Writes ``fixtures/F-ref/embeddings.npz`` and
 ``fixtures/F-ref/top5.json``, then checks the top 5 against that probe.
 """
 
@@ -18,7 +19,7 @@ def main() -> None:
         import numpy as np
         import torch
 
-        from sonoarchive.audio import load_mono
+        from sonoarchive.audio import load_mono, pad_to_one_second
         from sonoarchive.cnn14 import Cnn14Error, load_cnn14
         from sonoarchive.export_probe import ExportError, check_reference, top5
         from sonoarchive.paths import CNN14_PTH
@@ -46,7 +47,7 @@ def main() -> None:
     reference = {}
     for index, name in enumerate(names, start=1):
         print(f"embedding {index}/{len(names)} {name}", flush=True)
-        waveform = torch.from_numpy(load_mono(F_SHORT / name)).unsqueeze(0)
+        waveform = torch.from_numpy(pad_to_one_second(load_mono(F_SHORT / name))).unsqueeze(0)
         with torch.inference_mode():
             vector = model.embed(waveform).squeeze(0).cpu().numpy()
         vector = np.ascontiguousarray(vector, dtype=np.float32)

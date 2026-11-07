@@ -27,5 +27,5 @@
 
 ## Done when
 
-- [ ] Steps 1–5 pass
-- [ ] The ONNX parity check (step 4) runs as `python -m sonoarchive.parity`, so it can be rerun after any model change
+- [x] Steps 1–5 pass
+- [x] The ONNX parity check (step 4) runs as `python -m sonoarchive.parity`, so it can be rerun after any model change

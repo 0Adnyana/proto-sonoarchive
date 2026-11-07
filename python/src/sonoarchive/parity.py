@@ -2,7 +2,8 @@
 
     python -m sonoarchive.parity
 
-Loads each F-short file the same way as ``fref`` (32 kHz mono), runs
+Loads each F-short file the same way as ``fref`` (32 kHz mono, with clips
+under one second zero-padded to 32000 samples), runs
 ``models/Cnn14_mAP=0.431.onnx``, and compares the vector with
 ``fixtures/F-ref/embeddings.npz``. Each cosine similarity must be at least
 0.999. Rerun this after replacing the ONNX file.
@@ -21,7 +22,7 @@ def main() -> None:
         import numpy as np
         import onnxruntime as ort
 
-        from sonoarchive.audio import load_mono
+        from sonoarchive.audio import load_mono, pad_to_one_second
         from sonoarchive.export_probe import EMBEDDING_DIM, ExportError, read_npy
     except ImportError as ex:
         raise SystemExit(
@@ -42,7 +43,7 @@ def main() -> None:
                 reference = read_npy(archive.read(f"{name}.npy"))
             except ExportError as ex:
                 raise SystemExit(str(ex)) from ex
-            waveform = load_mono(F_SHORT / name)[None, :]
+            waveform = pad_to_one_second(load_mono(F_SHORT / name))[None, :]
             got = session.run(["embedding"], {"waveform": waveform})[0].reshape(-1)
             if got.shape != (EMBEDDING_DIM,):
                 raise SystemExit(f"{name} ONNX embedding shape is {got.shape}")
