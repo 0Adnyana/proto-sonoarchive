@@ -1,8 +1,9 @@
 import { statSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import type { ImportFolderResult } from '../shared/ipc'
+import { MAX_ANALYSED_SECONDS } from './analysis'
 import type { LibraryDatabase } from './database'
-import { upsertWav } from './database'
+import { clearSuggestions, upsertWav } from './database'
 import { DecodeError, decodeWavDuration } from './decode'
 import { wavFilesInFolder } from './wav'
 
@@ -16,14 +17,16 @@ export async function importWavFolder(
     const name = basename(filePath)
     try {
       const duration = await decodeWavDuration(filePath)
+      const storedPath = resolve(filePath)
       upsertWav(db, {
-        path: resolve(filePath),
+        path: storedPath,
         name,
         format: 'wav',
         duration,
         status: 'untagged',
         modifiedTime: Math.trunc(statSync(filePath).mtimeMs),
       })
+      if (duration > MAX_ANALYSED_SECONDS) clearSuggestions(db, storedPath)
       stored += 1
     } catch (error) {
       if (error instanceof DecodeError && error.code === 'missing-ffmpeg') {

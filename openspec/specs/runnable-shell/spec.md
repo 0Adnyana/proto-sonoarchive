@@ -32,12 +32,17 @@ The desktop app SHALL open one window with three screens named Library, Tag, and
 
 ### Requirement: Main process can reach the worker
 
-The main process SHALL start the inference worker as a separate process and complete a ping that returns success, without loading a model.
+The main process SHALL start the inference worker as a separate process and complete a ping that returns success. The worker MAY load ONNX Runtime, the CNN14 model, and the probe in order to analyse audio. The ping SHALL succeed when those files are missing.
 
 #### Scenario: Worker answers a ping
 
 - **WHEN** the main process sends the shared ping message to the worker
-- **THEN** the worker responds with a success payload and does not load ONNX Runtime or a model file
+- **THEN** the worker responds with a success payload
+
+#### Scenario: A missing model does not fail the ping
+
+- **WHEN** the CNN14 model or the probe file is missing and the main process sends the shared ping message
+- **THEN** the worker responds with a success payload
 
 ### Requirement: Renderer cannot use Node directly
 

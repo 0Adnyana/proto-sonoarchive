@@ -78,6 +78,40 @@ describe('library screen', () => {
     expect(formatImportStatus({ stored: 1, failed: [] })).toBe('Stored 1 file.')
   })
 
+  it('keeps the stored-files sentence when analysis fails', async () => {
+    let finish: (result: ImportFolderResult | null) => void = () => {}
+    let publish: (notice: string) => void = () => {}
+    render(
+      <App
+        bridge={bridge({
+          importFolder: () =>
+            new Promise((resolve) => {
+              finish = resolve
+            }),
+          onLibraryNotice: (listener) => {
+            publish = listener
+            return () => {}
+          },
+        })}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import folder' }))
+    finish({ stored: 2, failed: [] })
+
+    expect(await screen.findByRole('status')).toHaveProperty(
+      'textContent',
+      'Stored 2 files.',
+    )
+    publish('Could not analyse tone.wav. CNN14 model is missing.')
+
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toBe(
+        'Stored 2 files. Could not analyse tone.wav. CNN14 model is missing.',
+      )
+    })
+  })
+
   it('leaves the library unchanged when the picker is cancelled', async () => {
     let imported = false
     render(
@@ -194,6 +228,7 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
     listLibrary: async () => [],
     importFolder: async () => null,
     onLibraryChanged: () => () => {},
+    onLibraryNotice: () => () => {},
     ...overrides,
   }
 }

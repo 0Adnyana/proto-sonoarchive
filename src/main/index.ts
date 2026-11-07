@@ -10,14 +10,32 @@ import {
   utilityProcess,
 } from 'electron'
 import {
+  type AnalysisPayload,
   type ImportFolderResult,
   ipcChannels,
   isPingSuccess,
   type LibraryFile,
   type PingSuccess,
+  readAnalyseMessage,
 } from '../shared/ipc'
 import workerPath from '../worker/index?modulePath'
-import { type LibraryDatabase, listFiles, openLibrary } from './database'
+import {
+  ANALYSIS_TIMEOUT_MS,
+  analysisNotice,
+  CNN14_FILENAME,
+  drainAnalysis,
+  PROBE_FILENAME,
+  pendingAnalysisPaths,
+  readProbeVersion,
+  resolveBundledFile,
+  storeAnalysis,
+} from './analysis'
+import {
+  type LibraryDatabase,
+  listAnalysisCandidates,
+  listFiles,
+  openLibrary,
+} from './database'
 import { importWavFolder } from './import-wavs'
 
 const UCS_FILE = 'UCS v8.2.1 Full List.xlsx'
@@ -29,6 +47,25 @@ const preloadPath = fileURLToPath(
 let worker: UtilityProcess | undefined
 let library: LibraryDatabase | undefined
 let libraryError: Error | undefined
+let analysisId = 0
+let analysisTail: Promise<void> = Promise.resolve()
+const analysisQueued = new Set<string>()
+const analysisWaiters = new Map<
+  number,
+  {
+    filePath: string
+    resolve: (value: AnalysisPayload) => void
+    timer: ReturnType<typeof setTimeout>
+  }
+>()
+
+function resolveModelPath(): string {
+  return resolveBundledFile(CNN14_FILENAME, app.getAppPath(), process.cwd())
+}
+
+function resolveProbePath(): string {
+  return resolveBundledFile(PROBE_FILENAME, app.getAppPath(), process.cwd())
+}
 
 function ucsWorkbookPath(): string | undefined {
   const candidates = [
@@ -76,7 +113,8 @@ function registerLibraryHandlers(): void {
       const folder = picked.filePaths[0]
       if (picked.canceled || !folder) return null
       const result = await importWavFolder(db, folder)
-      event.sender.send(ipcChannels.libraryChanged, listFiles(db))
+      broadcastLibrary()
+      enqueuePendingAnalysis()
       return { stored: result.stored, failed: result.failed }
     },
   )
@@ -96,6 +134,10 @@ function createWindow(): void {
     },
   })
 
+  window.webContents.on('did-finish-load', () => {
+    enqueuePendingAnalysis()
+  })
+
   if (process.env.ELECTRON_RENDERER_URL) {
     void window.loadURL(process.env.ELECTRON_RENDERER_URL)
     return
@@ -111,6 +153,15 @@ function startWorker(): UtilityProcess {
   const pending: Array<(value: PingSuccess) => void> = []
 
   child.on('message', (message: unknown) => {
+    const analysed = readAnalyseMessage(message)
+    if (analysed) {
+      const waiter = analysisWaiters.get(analysed.id)
+      if (!waiter || waiter.filePath !== analysed.filePath) return
+      clearTimeout(waiter.timer)
+      analysisWaiters.delete(analysed.id)
+      waiter.resolve(analysed.result)
+      return
+    }
     if (!isPingSuccess(message)) return
     pending.shift()?.(message)
   })
@@ -133,6 +184,80 @@ function startWorker(): UtilityProcess {
   })
 
   return child
+}
+
+function broadcastLibrary(): void {
+  if (!library) return
+  const files = listFiles(library)
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send(ipcChannels.libraryChanged, files)
+  }
+}
+
+function broadcastNotice(message: string): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send(ipcChannels.libraryNotice, message)
+  }
+}
+
+function requestAnalysis(filePath: string): Promise<AnalysisPayload> {
+  const child = worker
+  if (!child) return Promise.resolve({ ok: false, message: 'Analysis failed.' })
+  const id = analysisId + 1
+  analysisId = id
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      analysisWaiters.delete(id)
+      resolve({ ok: false, message: 'Analysis failed.' })
+    }, ANALYSIS_TIMEOUT_MS)
+    analysisWaiters.set(id, { filePath, resolve, timer })
+    child.postMessage({
+      type: 'analyse',
+      id,
+      filePath,
+      modelPath: resolveModelPath(),
+      probePath: resolveProbePath(),
+    })
+  })
+}
+
+function enqueuePendingAnalysis(): void {
+  if (!library) return
+  const db = library
+  const pending = pendingAnalysisPaths(
+    listAnalysisCandidates(db),
+    readProbeVersion(resolveProbePath()),
+  ).filter((file) => !analysisQueued.has(file.path))
+  if (pending.length === 0) return
+  for (const file of pending) analysisQueued.add(file.path)
+  analysisTail = analysisTail
+    .then(() =>
+      drainAnalysis(
+        pending,
+        (file) =>
+          requestAnalysis(file.path).catch((error: unknown) => {
+            console.error(error)
+            return { ok: false, message: 'Analysis failed.' }
+          }),
+        (file, result) => {
+          analysisQueued.delete(file.path)
+          if (!library) return
+          try {
+            if (!storeAnalysis(library, file.path, result)) {
+              broadcastNotice(analysisNotice(file.path, result.message))
+              return
+            }
+            broadcastLibrary()
+          } catch (error) {
+            console.error(error)
+            broadcastNotice(analysisNotice(file.path, 'Analysis failed.'))
+          }
+        },
+      ),
+    )
+    .catch((error: unknown) => {
+      console.error(error)
+    })
 }
 
 void app.whenReady().then(() => {

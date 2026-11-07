@@ -76,3 +76,12 @@ The Library table SHALL show each row's top-1 CatID from the preload bridge. The
 
 - **WHEN** the bridge lists a file with no suggestions
 - **THEN** the CatID cell is empty and the status cell is *untagged*
+
+### Requirement: An analysis failure stays on the status line with the import result
+
+The Library view SHALL show an analysis failure on the status line. That message SHALL NOT remove an import result already shown on the status line.
+
+#### Scenario: A failure follows a finished import
+
+- **WHEN** the status line already reports how many files were stored and analysis then fails
+- **THEN** the status line still reports how many files were stored and includes the analysis failure

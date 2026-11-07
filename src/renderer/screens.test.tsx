@@ -17,6 +17,7 @@ const idleBridge: LibraryBridge = {
   listLibrary: async () => [],
   importFolder: async () => null,
   onLibraryChanged: () => () => {},
+  onLibraryNotice: () => () => {},
 }
 
 describe('renderer screens', () => {

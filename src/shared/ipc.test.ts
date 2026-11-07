@@ -16,6 +16,7 @@ describe('ipc', () => {
     expect(ipcChannels.importFolder).toBe('library:import-folder')
     expect(ipcChannels.listLibrary).toBe('library:list')
     expect(ipcChannels.libraryChanged).toBe('library:changed')
+    expect(ipcChannels.libraryNotice).toBe('library:notice')
   })
 
   it('recognises the ping payloads', () => {

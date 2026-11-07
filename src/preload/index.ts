@@ -3,10 +3,22 @@ import {
   ipcChannels,
   isImportFolderResult,
   isLibraryFileList,
+  isLibraryNotice,
   isPingSuccess,
   type LibraryFile,
   type SonoarchiveBridge,
 } from '../shared/ipc'
+import { createNoticeHub } from '../shared/notice-hub'
+
+const notices = createNoticeHub()
+
+ipcRenderer.on(
+  ipcChannels.libraryNotice,
+  (_event: IpcRendererEvent, payload: unknown) => {
+    if (!isLibraryNotice(payload)) return
+    notices.push(payload)
+  },
+)
 
 const api: SonoarchiveBridge = {
   ping: async () => {
@@ -41,6 +53,8 @@ const api: SonoarchiveBridge = {
       ipcRenderer.removeListener(ipcChannels.libraryChanged, wrapped)
     }
   },
+  onLibraryNotice: (listener: (message: string) => void) =>
+    notices.subscribe(listener),
 }
 
 contextBridge.exposeInMainWorld('sonoarchive', api)

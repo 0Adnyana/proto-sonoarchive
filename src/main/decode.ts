@@ -87,7 +87,7 @@ export function decodeWavDuration(filePath: string): Promise<number> {
   })
 }
 
-function bundledFfmpeg(): string {
+export function bundledFfmpeg(): string {
   const ffmpegPath = ffmpegRequire('ffmpeg-static') as string | null
   if (!ffmpegPath || !existsSync(ffmpegPath)) {
     throw new DecodeError('bundled ffmpeg is missing', 'missing-ffmpeg')

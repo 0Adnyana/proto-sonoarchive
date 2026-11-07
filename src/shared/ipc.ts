@@ -3,6 +3,7 @@ export const ipcChannels = {
   importFolder: 'library:import-folder',
   listLibrary: 'library:list',
   libraryChanged: 'library:changed',
+  libraryNotice: 'library:notice',
 } as const
 
 export type PingRequest = {
@@ -11,6 +12,34 @@ export type PingRequest = {
 
 export type PingSuccess = {
   ok: true
+}
+
+export type AnalyseRequest = {
+  type: 'analyse'
+  id: number
+  filePath: string
+  modelPath: string
+  probePath: string
+}
+
+export type AnalysisSuccess = {
+  ok: true
+  embedding: Float32Array
+  probeVersion: string
+  suggestions: Suggestion[]
+}
+
+export type AnalysisFailure = {
+  ok: false
+  message: string
+}
+
+export type AnalysisPayload = AnalysisSuccess | AnalysisFailure
+
+export type AnalyseResponse = AnalysisPayload & {
+  type: 'analyse'
+  id: number
+  filePath: string
 }
 
 export type Suggestion = {
@@ -37,6 +66,7 @@ export type SonoarchiveBridge = {
   importFolder: () => Promise<ImportFolderResult | null>
   listLibrary: () => Promise<LibraryFile[]>
   onLibraryChanged: (listener: (files: LibraryFile[]) => void) => () => void
+  onLibraryNotice: (listener: (message: string) => void) => () => void
 }
 
 export function isPingRequest(message: unknown): message is PingRequest {
@@ -44,7 +74,74 @@ export function isPingRequest(message: unknown): message is PingRequest {
 }
 
 export function isPingSuccess(message: unknown): message is PingSuccess {
-  return isRecord(message) && message.ok === true
+  return (
+    isRecord(message) &&
+    message.ok === true &&
+    Object.keys(message).every((key) => key === 'ok')
+  )
+}
+
+export function isAnalyseRequest(message: unknown): message is AnalyseRequest {
+  return (
+    isRecord(message) &&
+    message.type === 'analyse' &&
+    typeof message.id === 'number' &&
+    Number.isInteger(message.id) &&
+    isNonEmptyString(message.filePath) &&
+    isNonEmptyString(message.modelPath) &&
+    isNonEmptyString(message.probePath)
+  )
+}
+
+export function readAnalyseMessage(message: unknown):
+  | {
+      id: number
+      filePath: string
+      result: AnalysisPayload
+    }
+  | undefined {
+  if (!isRecord(message) || message.type !== 'analyse') return undefined
+  if (typeof message.id !== 'number' || !Number.isInteger(message.id))
+    return undefined
+  if (!isNonEmptyString(message.filePath)) return undefined
+  if (message.ok === false) {
+    if (!isNonEmptyString(message.message)) return undefined
+    return {
+      id: message.id,
+      filePath: message.filePath,
+      result: { ok: false, message: message.message },
+    }
+  }
+  if (message.ok !== true) return undefined
+  const embedding = copyEmbedding(message.embedding)
+  if (!embedding || !isNonEmptyString(message.probeVersion)) return undefined
+  if (
+    !Array.isArray(message.suggestions) ||
+    message.suggestions.length !== 5 ||
+    !message.suggestions.every(isSuggestion)
+  ) {
+    return undefined
+  }
+  return {
+    id: message.id,
+    filePath: message.filePath,
+    result: {
+      ok: true,
+      embedding,
+      probeVersion: message.probeVersion,
+      suggestions: message.suggestions,
+    },
+  }
+}
+
+export function isAnalyseResponse(
+  message: unknown,
+): message is AnalyseResponse {
+  return readAnalyseMessage(message) !== undefined
+}
+
+export function isLibraryNotice(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
 }
 
 function isSuggestion(value: unknown): value is Suggestion {
@@ -93,4 +190,22 @@ export function isImportFolderResult(
 
 function isRecord(message: unknown): message is Record<string, unknown> {
   return typeof message === 'object' && message !== null
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+function copyEmbedding(value: unknown): Float32Array | undefined {
+  if (value instanceof Float32Array && value.length === 2048) {
+    return new Float32Array(value)
+  }
+  if (!Array.isArray(value) || value.length !== 2048) return undefined
+  const embedding = new Float32Array(2048)
+  for (let index = 0; index < embedding.length; index += 1) {
+    const sample = value[index]
+    if (typeof sample !== 'number' || !Number.isFinite(sample)) return undefined
+    embedding[index] = sample
+  }
+  return embedding
 }

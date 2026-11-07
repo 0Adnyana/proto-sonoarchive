@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { LibraryFile } from '../shared/ipc'
-import { errorText, formatImportStatus, type LibraryBridge } from './library'
+import {
+  errorText,
+  formatImportStatus,
+  formatLibraryStatus,
+  type LibraryBridge,
+} from './library'
 import { LibraryView } from './library-view'
 
 type AppProps = {
@@ -10,11 +15,14 @@ type AppProps = {
 
 export function App({ bridge }: AppProps) {
   const [files, setFiles] = useState<LibraryFile[]>([])
-  const [status, setStatus] = useState('')
+  const [baseStatus, setBaseStatus] = useState('')
+  const [notices, setNotices] = useState<string[]>([])
+  const status = formatLibraryStatus(baseStatus, notices)
 
   useEffect(() => {
     let seenChange = false
     let active = true
+    const seenNotices: string[] = []
 
     void bridge
       .listLibrary()
@@ -24,17 +32,23 @@ export function App({ bridge }: AppProps) {
       })
       .catch((error: unknown) => {
         if (!active) return
-        setStatus(errorText(error))
+        setBaseStatus(errorText(error))
       })
 
     const unsubscribe = bridge.onLibraryChanged((rows) => {
       seenChange = true
       setFiles(rows)
     })
+    const unsubscribeNotice = bridge.onLibraryNotice((notice) => {
+      if (!active) return
+      seenNotices.push(notice)
+      setNotices([...seenNotices])
+    })
 
     return () => {
       active = false
       unsubscribe()
+      unsubscribeNotice()
     }
   }, [bridge])
 
@@ -43,10 +57,10 @@ export function App({ bridge }: AppProps) {
       .importFolder()
       .then((result) => {
         if (!result) return
-        setStatus(formatImportStatus(result))
+        setBaseStatus(formatImportStatus(result))
       })
       .catch((error: unknown) => {
-        setStatus(errorText(error))
+        setBaseStatus(errorText(error))
       })
   }
 

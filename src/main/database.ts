@@ -166,6 +166,39 @@ type ListedRow = {
   score: number | null
 }
 
+export type AnalysisCandidate = {
+  path: string
+  name: string
+  duration: number
+  probeVersion: string | null
+}
+
+export function listAnalysisCandidates(
+  db: LibraryDatabase,
+): AnalysisCandidate[] {
+  const rows = db
+    .prepare(
+      `SELECT
+         files.path AS path,
+         files.name AS name,
+         files.duration AS duration,
+         (
+           SELECT suggestions.probe_version
+           FROM suggestions
+           WHERE suggestions.path = files.path AND suggestions.rank = 1
+         ) AS probeVersion
+       FROM files
+       ORDER BY files.name COLLATE NOCASE, files.path`,
+    )
+    .all() as AnalysisCandidate[]
+  return rows.map((row) => ({
+    path: row.path,
+    name: row.name,
+    duration: row.duration,
+    probeVersion: row.probeVersion ?? null,
+  }))
+}
+
 export function listFiles(db: LibraryDatabase): LibraryFile[] {
   const rows = db
     .prepare(

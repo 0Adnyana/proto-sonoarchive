@@ -2,7 +2,14 @@ import { mkdtempSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { countFiles, listFiles, openLibrary, readStoredFile } from './database'
+import type { Suggestion } from '../shared/ipc'
+import {
+  countFiles,
+  listFiles,
+  openLibrary,
+  readStoredFile,
+  replaceSuggestions,
+} from './database'
 import { importWavFolder } from './import-wavs'
 
 describe('wav import', () => {
@@ -75,7 +82,70 @@ describe('wav import', () => {
     expect(after?.modifiedTime).not.toBe(before?.modifiedTime)
     db.close()
   })
+
+  it('clears suggestions when a path is imported longer than 10 seconds', async () => {
+    const folder = mkdtempSync(join(tmpdir(), 'sonoarchive-long-'))
+    const filePath = join(folder, 'tone.wav')
+    const db = openLibrary(join(folder, 'library.db'))
+    writePcmWav(filePath, 1)
+    await importWavFolder(db, folder)
+    replaceSuggestions(
+      db,
+      resolve(filePath),
+      sampleEmbedding(),
+      suggestions,
+      'probe-a',
+    )
+
+    writePcmWav(filePath, 11)
+    await importWavFolder(db, folder)
+
+    expect(readStoredFile(db, resolve(filePath))).toMatchObject({
+      name: 'tone.wav',
+      status: 'untagged',
+    })
+    expect(readStoredFile(db, resolve(filePath))?.duration).toBeGreaterThan(10)
+    expect(listFiles(db)).toEqual([
+      {
+        name: 'tone.wav',
+        format: 'wav',
+        duration: readStoredFile(db, resolve(filePath))?.duration,
+        status: 'untagged',
+        catId: null,
+        suggestions: [],
+      },
+    ])
+    expect(countEmbeddings(db)).toBe(0)
+    expect(countSuggestions(db)).toBe(0)
+    db.close()
+  })
 })
+
+const suggestions: Suggestion[] = [
+  { catId: 'AIRBlow', score: 0.5 },
+  { catId: 'AIRBrst', score: 0.25 },
+  { catId: 'AIRHiss', score: 0.125 },
+  { catId: 'AIRMisc', score: 0.0625 },
+  { catId: 'AIRSuck', score: 0.03125 },
+]
+
+function sampleEmbedding(): Float32Array {
+  return new Float32Array(2048)
+}
+
+function countEmbeddings(db: ReturnType<typeof openLibrary>): number {
+  const row = db.prepare('SELECT COUNT(*) AS count FROM embeddings').get() as {
+    count: number
+  }
+  return row.count
+}
+
+function countSuggestions(db: ReturnType<typeof openLibrary>): number {
+  const row = db.prepare('SELECT COUNT(*) AS count FROM suggestions').get() as {
+    count: number
+  }
+  return row.count
+}
 
 function writePcmWav(filePath: string, seconds: number): void {
   const sampleRate = 8000
