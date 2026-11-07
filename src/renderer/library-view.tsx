@@ -13,10 +13,18 @@ import { formatDurationSeconds } from './library'
 type LibraryViewProps = {
   files: LibraryFile[]
   status: string
+  selectedPath: string | null
   onImport: () => void
+  onOpen: (path: string) => void
 }
 
-export function LibraryView({ files, status, onImport }: LibraryViewProps) {
+export function LibraryView({
+  files,
+  status,
+  selectedPath,
+  onImport,
+  onOpen,
+}: LibraryViewProps) {
   return (
     <section className="flex flex-col gap-3">
       <h1 className="text-lg font-semibold">Library</h1>
@@ -38,7 +46,18 @@ export function LibraryView({ files, status, onImport }: LibraryViewProps) {
         </TableHeader>
         <TableBody>
           {files.map((file) => (
-            <TableRow key={file.name}>
+            <TableRow
+              key={file.path}
+              data-state={file.path === selectedPath ? 'selected' : undefined}
+              className="cursor-pointer"
+              tabIndex={0}
+              onClick={() => onOpen(file.path)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return
+                event.preventDefault()
+                onOpen(file.path)
+              }}
+            >
               <TableCell>{file.name}</TableCell>
               <TableCell>{file.format}</TableCell>
               <TableCell>{formatDurationSeconds(file.duration)}</TableCell>

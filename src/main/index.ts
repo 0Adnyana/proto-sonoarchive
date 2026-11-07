@@ -1,11 +1,13 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   app,
   BrowserWindow,
   dialog,
   ipcMain,
+  net,
+  protocol,
   type UtilityProcess,
   utilityProcess,
 } from 'electron'
@@ -14,10 +16,12 @@ import {
   type ImportFolderResult,
   ipcChannels,
   isPingSuccess,
+  isSaveLabelInput,
   type LibraryFile,
   type PingSuccess,
   readAnalyseMessage,
 } from '../shared/ipc'
+import { filePathFromMediaUrl, mediaUrlFor } from '../shared/media-url'
 import workerPath from '../worker/index?modulePath'
 import {
   ANALYSIS_TIMEOUT_MS,
@@ -31,12 +35,28 @@ import {
   storeAnalysis,
 } from './analysis'
 import {
+  hasStoredFile,
   type LibraryDatabase,
   listAnalysisCandidates,
   listFiles,
+  listUcs,
   openLibrary,
+  saveLabel,
 } from './database'
 import { importWavFolder } from './import-wavs'
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'sonoarchive',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      corsEnabled: true,
+    },
+  },
+])
 
 const UCS_FILE = 'UCS v8.2.1 Full List.xlsx'
 
@@ -98,6 +118,28 @@ function requireLibrary(): LibraryDatabase {
 function registerLibraryHandlers(): void {
   ipcMain.handle(ipcChannels.listLibrary, (): LibraryFile[] => {
     return listFiles(requireLibrary())
+  })
+
+  ipcMain.handle(ipcChannels.listUcs, () => {
+    return listUcs(requireLibrary())
+  })
+
+  ipcMain.handle(ipcChannels.saveLabel, (_event, payload: unknown) => {
+    if (!isSaveLabelInput(payload)) {
+      throw new Error('Could not save the label.')
+    }
+    saveLabel(requireLibrary(), payload)
+    broadcastLibrary()
+  })
+
+  ipcMain.handle(ipcChannels.mediaUrl, (_event, filePath: unknown) => {
+    if (typeof filePath !== 'string' || filePath.length === 0) {
+      throw new Error('Unknown file')
+    }
+    if (!hasStoredFile(requireLibrary(), filePath)) {
+      throw new Error('Unknown file')
+    }
+    return mediaUrlFor(filePath)
   })
 
   ipcMain.handle(
@@ -186,6 +228,16 @@ function startWorker(): UtilityProcess {
   return child
 }
 
+function registerMediaScheme(): void {
+  protocol.handle('sonoarchive', (request) => {
+    const filePath = filePathFromMediaUrl(request.url)
+    if (!filePath || !library || !hasStoredFile(library, filePath)) {
+      return new Response(null, { status: 404 })
+    }
+    return net.fetch(pathToFileURL(filePath).href)
+  })
+}
+
 function broadcastLibrary(): void {
   if (!library) return
   const files = listFiles(library)
@@ -263,6 +315,7 @@ function enqueuePendingAnalysis(): void {
 void app.whenReady().then(() => {
   worker = startWorker()
   openAppLibrary()
+  registerMediaScheme()
   registerLibraryHandlers()
   createWindow()
 

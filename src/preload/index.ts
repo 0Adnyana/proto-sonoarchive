@@ -4,7 +4,9 @@ import {
   isImportFolderResult,
   isLibraryFileList,
   isLibraryNotice,
+  isMediaUrl,
   isPingSuccess,
+  isUcsEntryList,
   type LibraryFile,
   type SonoarchiveBridge,
 } from '../shared/ipc'
@@ -55,6 +57,26 @@ const api: SonoarchiveBridge = {
   },
   onLibraryNotice: (listener: (message: string) => void) =>
     notices.subscribe(listener),
+  listUcs: async () => {
+    const result: unknown = await ipcRenderer.invoke(ipcChannels.listUcs)
+    if (!isUcsEntryList(result)) {
+      throw new Error('Unexpected catalog response')
+    }
+    return result
+  },
+  saveLabel: async (input) => {
+    await ipcRenderer.invoke(ipcChannels.saveLabel, input)
+  },
+  mediaUrl: async (filePath) => {
+    const result: unknown = await ipcRenderer.invoke(
+      ipcChannels.mediaUrl,
+      filePath,
+    )
+    if (!isMediaUrl(result)) {
+      throw new Error('Unexpected media response')
+    }
+    return result
+  },
 }
 
 contextBridge.exposeInMainWorld('sonoarchive', api)

@@ -38,12 +38,14 @@ describe('wav import', () => {
     const reopened = openLibrary(dbPath)
     expect(listFiles(reopened)).toEqual([
       {
+        path: resolve(filePath),
         name: 'tone.WAV',
         format: 'wav',
         duration: stored?.duration,
         status: 'untagged',
         catId: null,
         suggestions: [],
+        label: null,
       },
     ])
     reopened.close()
@@ -107,12 +109,14 @@ describe('wav import', () => {
     expect(readStoredFile(db, resolve(filePath))?.duration).toBeGreaterThan(10)
     expect(listFiles(db)).toEqual([
       {
+        path: resolve(filePath),
         name: 'tone.wav',
         format: 'wav',
         duration: readStoredFile(db, resolve(filePath))?.duration,
         status: 'untagged',
         catId: null,
         suggestions: [],
+        label: null,
       },
     ])
     expect(countEmbeddings(db)).toBe(0)

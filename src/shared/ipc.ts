@@ -1,9 +1,14 @@
+import { filePathFromMediaUrl } from './media-url'
+
 export const ipcChannels = {
   ping: 'app:ping',
   importFolder: 'library:import-folder',
   listLibrary: 'library:list',
   libraryChanged: 'library:changed',
   libraryNotice: 'library:notice',
+  listUcs: 'library:list-ucs',
+  saveLabel: 'library:save-label',
+  mediaUrl: 'library:media-url',
 } as const
 
 export type PingRequest = {
@@ -47,13 +52,42 @@ export type Suggestion = {
   score: number
 }
 
+export const labelRanks = ['1', '2', '3', '4', '5', 'manual'] as const
+
+export type LabelRank = (typeof labelRanks)[number]
+
+export type LibraryLabel = {
+  catId: string
+  fxName: string
+  creatorId: string
+  sourceId: string
+  rank: LabelRank
+}
+
 export type LibraryFile = {
+  path: string
   name: string
   format: 'wav'
   duration: number
-  status: 'untagged'
+  status: 'untagged' | 'tagged'
   catId: string | null
   suggestions: Suggestion[]
+  label: LibraryLabel | null
+}
+
+export type UcsEntry = {
+  catId: string
+  category: string
+  subCategory: string
+}
+
+export type SaveLabelInput = {
+  path: string
+  catId: string
+  fxName: string
+  creatorId: string
+  sourceId: string
+  rank: LabelRank
 }
 
 export type ImportFolderResult = {
@@ -67,6 +101,9 @@ export type SonoarchiveBridge = {
   listLibrary: () => Promise<LibraryFile[]>
   onLibraryChanged: (listener: (files: LibraryFile[]) => void) => () => void
   onLibraryNotice: (listener: (message: string) => void) => () => void
+  listUcs: () => Promise<UcsEntry[]>
+  saveLabel: (input: SaveLabelInput) => Promise<void>
+  mediaUrl: (path: string) => Promise<string>
 }
 
 export function isPingRequest(message: unknown): message is PingRequest {
@@ -154,21 +191,74 @@ function isSuggestion(value: unknown): value is Suggestion {
   )
 }
 
+export function isLabelRank(value: unknown): value is LabelRank {
+  return (
+    typeof value === 'string' &&
+    (labelRanks as readonly string[]).includes(value)
+  )
+}
+
+function isLibraryLabel(value: unknown): value is LibraryLabel {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.catId) &&
+    isNonEmptyString(value.fxName) &&
+    typeof value.creatorId === 'string' &&
+    typeof value.sourceId === 'string' &&
+    isLabelRank(value.rank)
+  )
+}
+
 export function isLibraryFile(value: unknown): value is LibraryFile {
   if (!isRecord(value)) return false
-  const { name, format, duration, status, catId, suggestions } = value
+  const { path, name, format, duration, status, catId, suggestions, label } =
+    value
+  if (!isNonEmptyString(path)) return false
   if (typeof name !== 'string') return false
   if (format !== 'wav') return false
   if (typeof duration !== 'number' || !Number.isFinite(duration)) return false
-  if (status !== 'untagged') return false
-  if (catId !== null && (typeof catId !== 'string' || catId.length === 0)) {
-    return false
-  }
+  if (status !== 'untagged' && status !== 'tagged') return false
+  if (catId !== null && !isNonEmptyString(catId)) return false
   if (!Array.isArray(suggestions) || !suggestions.every(isSuggestion)) {
     return false
   }
-  if (catId === null) return suggestions.length === 0
-  return suggestions.length === 5 && suggestions[0]?.catId === catId
+  if (suggestions.length !== 0 && suggestions.length !== 5) return false
+  if (status === 'untagged') {
+    if (label !== null) return false
+    if (catId === null) return suggestions.length === 0
+    return suggestions.length === 5 && suggestions[0]?.catId === catId
+  }
+  if (!isLibraryLabel(label) || label.catId !== catId) return false
+  return true
+}
+
+export function isUcsEntry(value: unknown): value is UcsEntry {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.catId) &&
+    isNonEmptyString(value.category) &&
+    isNonEmptyString(value.subCategory)
+  )
+}
+
+export function isUcsEntryList(value: unknown): value is UcsEntry[] {
+  return Array.isArray(value) && value.every(isUcsEntry)
+}
+
+export function isSaveLabelInput(value: unknown): value is SaveLabelInput {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.path) &&
+    isNonEmptyString(value.catId) &&
+    typeof value.fxName === 'string' &&
+    typeof value.creatorId === 'string' &&
+    typeof value.sourceId === 'string' &&
+    isLabelRank(value.rank)
+  )
+}
+
+export function isMediaUrl(value: unknown): value is string {
+  return typeof value === 'string' && filePathFromMediaUrl(value) !== undefined
 }
 
 export function isLibraryFileList(value: unknown): value is LibraryFile[] {

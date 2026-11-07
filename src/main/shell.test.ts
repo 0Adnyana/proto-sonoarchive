@@ -23,6 +23,20 @@ describe('renderer bridge', () => {
     expect(preload).toContain('listLibrary')
     expect(preload).toContain('onLibraryChanged')
     expect(preload).toContain('onLibraryNotice')
+    expect(preload).toContain('listUcs')
+    expect(preload).toContain('saveLabel')
+    expect(preload).toContain('mediaUrl')
+    expect(main.indexOf('registerSchemesAsPrivileged')).toBeGreaterThan(-1)
+    expect(main.indexOf('registerSchemesAsPrivileged')).toBeLessThan(
+      main.indexOf('app.whenReady'),
+    )
+    expect(main).toContain("scheme: 'sonoarchive'")
+    expect(main).toContain('net.fetch')
+    expect(main).toContain('hasStoredFile')
+    const readyBody = main.slice(main.indexOf('app.whenReady'))
+    expect(readyBody.indexOf('registerMediaScheme()')).toBeLessThan(
+      readyBody.indexOf('createWindow()'),
+    )
     expect(main).toContain('did-finish-load')
     expect(main).toContain('libraryNotice')
     expect(preload).not.toMatch(/from 'node:/)

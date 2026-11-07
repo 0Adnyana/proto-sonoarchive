@@ -127,12 +127,14 @@ describe('analysis queue', () => {
     expect(wrote).toBe(false)
     expect(listFiles(db)).toEqual([
       {
+        path: tone,
         name: 'tone.wav',
         format: 'wav',
         duration: 1,
         status: 'untagged',
         catId: null,
         suggestions: [],
+        label: null,
       },
     ])
     db.close()

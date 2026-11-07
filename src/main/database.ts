@@ -3,7 +3,14 @@ import { createRequire } from 'node:module'
 import { dirname } from 'node:path'
 import type Database from 'better-sqlite3'
 import type * as SqliteVec from 'sqlite-vec'
-import type { LibraryFile, Suggestion } from '../shared/ipc'
+import {
+  isLabelRank,
+  type LibraryFile,
+  type LibraryLabel,
+  type SaveLabelInput,
+  type Suggestion,
+  type UcsEntry,
+} from '../shared/ipc'
 import { readUcs, type UcsRow } from './ucs'
 
 const sqliteRequire = createRequire(import.meta.url)
@@ -15,7 +22,7 @@ export type StoredFile = {
   name: string
   format: 'wav'
   duration: number
-  status: 'untagged'
+  status: 'untagged' | 'tagged'
   modifiedTime: number
 }
 
@@ -48,6 +55,15 @@ const SCHEMA = `
     score REAL NOT NULL,
     probe_version TEXT NOT NULL,
     PRIMARY KEY (path, rank)
+  );
+  CREATE TABLE IF NOT EXISTS labels (
+    path TEXT PRIMARY KEY,
+    CatID TEXT NOT NULL,
+    FXName TEXT NOT NULL CHECK (length(FXName) > 0),
+    CreatorID TEXT NOT NULL,
+    SourceID TEXT NOT NULL,
+    rank TEXT NOT NULL CHECK (rank IN ('1', '2', '3', '4', '5', 'manual')),
+    saved_at TEXT NOT NULL CHECK (length(saved_at) > 0)
   );
 `
 
@@ -164,6 +180,11 @@ type ListedRow = {
   rank: number | null
   catId: string | null
   score: number | null
+  labelCatId: string | null
+  fxName: string | null
+  creatorId: string | null
+  sourceId: string | null
+  labelRank: string | null
 }
 
 export type AnalysisCandidate = {
@@ -210,29 +231,44 @@ export function listFiles(db: LibraryDatabase): LibraryFile[] {
          files.status AS status,
          suggestions.rank AS rank,
          suggestions.CatID AS catId,
-         suggestions.score AS score
+         suggestions.score AS score,
+         labels.CatID AS labelCatId,
+         labels.FXName AS fxName,
+         labels.CreatorID AS creatorId,
+         labels.SourceID AS sourceId,
+         labels.rank AS labelRank
        FROM files
        LEFT JOIN suggestions ON suggestions.path = files.path
+       LEFT JOIN labels ON labels.path = files.path
        ORDER BY files.name COLLATE NOCASE, files.path, suggestions.rank`,
     )
     .all() as ListedRow[]
   const listed: LibraryFile[] = []
   const indexByPath = new Map<string, LibraryFile>()
   for (const row of rows) {
-    if (row.format !== 'wav' || row.status !== 'untagged') {
+    if (row.format !== 'wav' || !isFileStatus(row.status)) {
       throw new Error(
         `Stored file ${row.name} has format ${row.format} and status ${row.status}`,
       )
     }
     let file = indexByPath.get(row.path)
     if (!file) {
+      const label = labelFromRow(row)
+      if (row.status === 'tagged' && !label) {
+        throw new Error(`Stored file ${row.name} is tagged without a label`)
+      }
+      if (row.status === 'untagged' && label) {
+        throw new Error(`Stored file ${row.name} is untagged and has a label`)
+      }
       file = {
+        path: row.path,
         name: row.name,
-        format: row.format,
+        format: 'wav',
         duration: row.duration,
         status: row.status,
-        catId: null,
+        catId: label?.catId ?? null,
         suggestions: [],
+        label,
       }
       indexByPath.set(row.path, file)
       listed.push(file)
@@ -242,20 +278,110 @@ export function listFiles(db: LibraryDatabase): LibraryFile[] {
       throw new Error(`Stored file ${row.name} has an incomplete suggestion`)
     }
     file.suggestions.push({ catId: row.catId, score: row.score })
-    if (row.rank === 1) file.catId = row.catId
+    if (row.rank === 1 && file.status === 'untagged') file.catId = row.catId
   }
   for (const file of listed) {
     const count = file.suggestions.length
-    if (count === 0) continue
-    if (
-      count !== SUGGESTION_COUNT ||
-      file.catId === null ||
-      file.suggestions[0]?.catId !== file.catId
-    ) {
+    if (count !== 0 && count !== SUGGESTION_COUNT) {
       throw new Error(`Stored file ${file.name} has ${count} suggestions`)
+    }
+    if (file.status === 'untagged') {
+      if (count === 0) {
+        if (file.catId !== null) {
+          throw new Error(`Stored file ${file.name} has ${count} suggestions`)
+        }
+        continue
+      }
+      if (file.catId === null || file.suggestions[0]?.catId !== file.catId) {
+        throw new Error(`Stored file ${file.name} has ${count} suggestions`)
+      }
+      continue
+    }
+    if (!file.label || file.catId !== file.label.catId) {
+      throw new Error(`Stored file ${file.name} is tagged without a label`)
     }
   }
   return listed
+}
+
+export function saveLabel(db: LibraryDatabase, input: SaveLabelInput): void {
+  const fxName = input.fxName.trim()
+  const creatorId = input.creatorId.trim()
+  const sourceId = input.sourceId.trim()
+  if (!isLabelRank(input.rank)) {
+    throw new Error('Rank is not a suggestion or manual')
+  }
+  if (fxName.length === 0) {
+    throw new Error('FXName is empty')
+  }
+
+  const findFile = db.prepare('SELECT path FROM files WHERE path = ?')
+  const findCat = db.prepare('SELECT CatID FROM ucs WHERE CatID = ?')
+  const findSuggestion = db.prepare(
+    'SELECT CatID AS catId FROM suggestions WHERE path = ? AND rank = ?',
+  )
+  const upsert = db.prepare(
+    `INSERT INTO labels (path, CatID, FXName, CreatorID, SourceID, rank, saved_at)
+     VALUES (@path, @catId, @fxName, @creatorId, @sourceId, @rank, @savedAt)
+     ON CONFLICT(path) DO UPDATE SET
+       CatID = excluded.CatID,
+       FXName = excluded.FXName,
+       CreatorID = excluded.CreatorID,
+       SourceID = excluded.SourceID,
+       rank = excluded.rank,
+       saved_at = excluded.saved_at`,
+  )
+  const markTagged = db.prepare(
+    `UPDATE files SET status = 'tagged' WHERE path = ?`,
+  )
+  const savedAt = new Date().toISOString()
+  const write = db.transaction(() => {
+    if (!findFile.get(input.path)) {
+      throw new Error(`No stored file for ${input.path}`)
+    }
+    if (!findCat.get(input.catId)) {
+      throw new Error(`Unknown CatID ${input.catId}`)
+    }
+    if (input.rank !== 'manual') {
+      const suggestion = findSuggestion.get(input.path, Number(input.rank)) as
+        | { catId: string }
+        | undefined
+      if (!suggestion || suggestion.catId !== input.catId) {
+        throw new Error(`Rank ${input.rank} does not match ${input.catId}`)
+      }
+    }
+    upsert.run({
+      path: input.path,
+      catId: input.catId,
+      fxName,
+      creatorId,
+      sourceId,
+      rank: input.rank,
+      savedAt,
+    })
+    if (markTagged.run(input.path).changes !== 1) {
+      throw new Error(`No stored file for ${input.path}`)
+    }
+  })
+  write()
+}
+
+export function listUcs(db: LibraryDatabase): UcsEntry[] {
+  return db
+    .prepare(
+      `SELECT CatID AS catId, Category AS category, SubCategory AS subCategory
+       FROM ucs
+       ORDER BY CatID`,
+    )
+    .all() as UcsEntry[]
+}
+
+export function hasStoredFile(db: LibraryDatabase, filePath: string): boolean {
+  return (
+    db
+      .prepare('SELECT 1 AS present FROM files WHERE path = ?')
+      .get(filePath) !== undefined
+  )
 }
 
 function embeddingBytes(embedding: Float32Array): Buffer {
@@ -304,12 +430,45 @@ export function readStoredFile(
     )
     .get(filePath) as StoredFile | undefined
   if (!row) return undefined
-  if (row.format !== 'wav' || row.status !== 'untagged') {
+  if (row.format !== 'wav' || !isFileStatus(row.status)) {
     throw new Error(
       `Stored file ${row.name} has format ${row.format} and status ${row.status}`,
     )
   }
   return row
+}
+
+function isFileStatus(status: string): status is 'untagged' | 'tagged' {
+  return status === 'untagged' || status === 'tagged'
+}
+
+function labelFromRow(row: ListedRow): LibraryLabel | null {
+  const fields = [
+    row.labelCatId,
+    row.fxName,
+    row.creatorId,
+    row.sourceId,
+    row.labelRank,
+  ]
+  if (fields.every((value) => value == null)) return null
+  if (
+    row.labelCatId == null ||
+    row.fxName == null ||
+    row.creatorId == null ||
+    row.sourceId == null ||
+    row.labelRank == null ||
+    !isLabelRank(row.labelRank) ||
+    row.fxName.length === 0
+  ) {
+    throw new Error(`Stored file ${row.name} has an incomplete label`)
+  }
+  return {
+    catId: row.labelCatId,
+    fxName: row.fxName,
+    creatorId: row.creatorId,
+    sourceId: row.sourceId,
+    rank: row.labelRank,
+  }
 }
 
 export function countFiles(db: LibraryDatabase): number {

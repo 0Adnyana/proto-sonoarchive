@@ -52,20 +52,24 @@ describe('suggestion store', () => {
     )
     expect(listFiles(db)).toEqual([
       {
+        path: quietPath,
         name: 'quiet.wav',
         format: 'wav',
         duration: 2,
         status: 'untagged',
         catId: null,
         suggestions: [],
+        label: null,
       },
       {
+        path: tonePath,
         name: 'tone.wav',
         format: 'wav',
         duration: 1.5,
         status: 'untagged',
         catId: 'AIRBlow',
         suggestions: firstSuggestions,
+        label: null,
       },
     ])
     db.close()
@@ -76,12 +80,14 @@ describe('suggestion store', () => {
       ranked(firstSuggestions, 'probe-a'),
     )
     expect(listFiles(reopened)[1]).toEqual({
+      path: tonePath,
       name: 'tone.wav',
       format: 'wav',
       duration: 1.5,
       status: 'untagged',
       catId: 'AIRBlow',
       suggestions: firstSuggestions,
+      label: null,
     })
 
     const second = sampleEmbedding(-0.25, 0.75)
@@ -106,12 +112,14 @@ describe('suggestion store', () => {
     expect(readEmbedding(cleared, tonePath)).toBeUndefined()
     expect(readSuggestionRows(cleared, tonePath)).toEqual([])
     expect(listFiles(cleared)[1]).toEqual({
+      path: tonePath,
       name: 'tone.wav',
       format: 'wav',
       duration: 1.5,
       status: 'untagged',
       catId: null,
       suggestions: [],
+      label: null,
     })
     cleared.close()
   })
@@ -156,12 +164,14 @@ describe('suggestion store', () => {
     expect(countUcs(db)).toBe(1)
     expect(listFiles(db)).toEqual([
       {
+        path: '/tone.wav',
         name: 'tone.wav',
         format: 'wav',
         duration: 1,
         status: 'untagged',
         catId: null,
         suggestions: [],
+        label: null,
       },
     ])
     replaceSuggestions(

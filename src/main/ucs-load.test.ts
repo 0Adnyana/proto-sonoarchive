@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { countDistinctCatIds, countUcs, openLibrary } from './database'
+import { countDistinctCatIds, countUcs, listUcs, openLibrary } from './database'
 
 const workbook = fileURLToPath(
   new URL('../../fixtures/UCS v8.2.1 Full List.xlsx', import.meta.url),
@@ -18,6 +18,14 @@ describe('ucs catalog', () => {
       const db = openLibrary(dbPath, workbook)
       expect(countUcs(db)).toBe(753)
       expect(countDistinctCatIds(db)).toBe(753)
+      const entries = listUcs(db)
+      expect(entries).toHaveLength(753)
+      expect(entries.map((entry) => entry.catId)).toEqual(
+        [...entries.map((entry) => entry.catId)].sort(),
+      )
+      expect(entries.find((entry) => entry.catId === 'AIRBlow')).toMatchObject({
+        category: 'AIR',
+      })
       const air = db
         .prepare('SELECT Category FROM ucs WHERE CatID = ?')
         .get('AIRBlow') as { Category: string }

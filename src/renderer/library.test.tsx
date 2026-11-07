@@ -13,15 +13,18 @@ import { App } from './app'
 import { formatImportStatus, type LibraryBridge } from './library'
 
 const tone: LibraryFile = {
+  path: '/library/tone.wav',
   name: 'tone.wav',
   format: 'wav',
   duration: 1.5,
   status: 'untagged',
   catId: null,
   suggestions: [],
+  label: null,
 }
 
 const scored: LibraryFile = {
+  path: '/library/door.wav',
   name: 'door.wav',
   format: 'wav',
   duration: 2,
@@ -34,6 +37,7 @@ const scored: LibraryFile = {
     { catId: 'AEROJet', score: 0.0625 },
     { catId: 'AEROMech', score: 0.03125 },
   ],
+  label: null,
 }
 
 describe('library screen', () => {
@@ -229,6 +233,9 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
     importFolder: async () => null,
     onLibraryChanged: () => () => {},
     onLibraryNotice: () => () => {},
+    listUcs: async () => [],
+    saveLabel: async () => {},
+    mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,
     ...overrides,
   }
 }

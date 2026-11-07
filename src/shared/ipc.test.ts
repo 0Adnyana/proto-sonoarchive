@@ -17,6 +17,9 @@ describe('ipc', () => {
     expect(ipcChannels.listLibrary).toBe('library:list')
     expect(ipcChannels.libraryChanged).toBe('library:changed')
     expect(ipcChannels.libraryNotice).toBe('library:notice')
+    expect(ipcChannels.listUcs).toBe('library:list-ucs')
+    expect(ipcChannels.saveLabel).toBe('library:save-label')
+    expect(ipcChannels.mediaUrl).toBe('library:media-url')
   })
 
   it('recognises the ping payloads', () => {
@@ -27,12 +30,14 @@ describe('ipc', () => {
 
   it('recognises library payloads', () => {
     const file = {
+      path: '/library/tone.wav',
       name: 'tone.wav',
       format: 'wav',
       duration: 1,
       status: 'untagged',
       catId: null,
       suggestions: [],
+      label: null,
     }
     const suggestions = [
       { catId: 'AIRBlow', score: 0.5 },
@@ -45,6 +50,38 @@ describe('ipc', () => {
     expect(
       isLibraryFileList([{ ...file, catId: 'AIRBlow', suggestions }]),
     ).toBe(true)
+    const label = {
+      catId: 'DOORWood',
+      fxName: 'Door',
+      creatorId: '',
+      sourceId: '',
+      rank: 'manual',
+    }
+    expect(
+      isLibraryFileList([
+        {
+          ...file,
+          status: 'tagged',
+          catId: 'DOORWood',
+          suggestions,
+          label,
+        },
+      ]),
+    ).toBe(true)
+    expect(
+      isLibraryFileList([
+        { ...file, status: 'tagged', catId: 'DOORWood', label },
+      ]),
+    ).toBe(true)
+    expect(
+      isLibraryFileList([
+        { ...file, status: 'tagged', catId: 'AIRBlow', label },
+      ]),
+    ).toBe(false)
+    expect(isLibraryFileList([{ ...file, status: 'tagged', label }])).toBe(
+      false,
+    )
+    expect(isLibraryFileList([{ ...file, label }])).toBe(false)
     expect(isLibraryFileList([{ ...file, format: 'mp3' }])).toBe(false)
     expect(isLibraryFileList([{ ...file, catId: 'AIRBlow' }])).toBe(false)
     expect(

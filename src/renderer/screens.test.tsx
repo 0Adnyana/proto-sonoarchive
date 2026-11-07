@@ -18,6 +18,9 @@ const idleBridge: LibraryBridge = {
   importFolder: async () => null,
   onLibraryChanged: () => () => {},
   onLibraryNotice: () => () => {},
+  listUcs: async () => [],
+  saveLabel: async () => {},
+  mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,
 }
 
 describe('renderer screens', () => {

@@ -2,7 +2,13 @@ import type { ImportFolderResult, SonoarchiveBridge } from '../shared/ipc'
 
 export type LibraryBridge = Pick<
   SonoarchiveBridge,
-  'importFolder' | 'listLibrary' | 'onLibraryChanged' | 'onLibraryNotice'
+  | 'importFolder'
+  | 'listLibrary'
+  | 'onLibraryChanged'
+  | 'onLibraryNotice'
+  | 'listUcs'
+  | 'saveLabel'
+  | 'mediaUrl'
 >
 
 export function formatDurationSeconds(duration: number): string {

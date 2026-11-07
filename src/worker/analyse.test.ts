@@ -61,12 +61,14 @@ describe('short wav analysis', () => {
     expect(storeAnalysis(db, wav, failedDecode)).toBe(false)
     expect(listFiles(db)).toEqual([
       {
+        path: wav,
         name: 'broken.wav',
         format: 'wav',
         duration: 1,
         status: 'untagged',
         catId: null,
         suggestions: [],
+        label: null,
       },
     ])
     expect(
@@ -119,12 +121,14 @@ describe('short wav analysis', () => {
     const stored = readStoredFile(db, wav)
     expect(listFiles(db)).toEqual([
       {
+        path: wav,
         name: 'tone.wav',
         format: 'wav',
         duration: stored?.duration,
         status: 'untagged',
         catId: result.suggestions[0]?.catId,
         suggestions: result.suggestions,
+        label: null,
       },
     ])
     const row = db
