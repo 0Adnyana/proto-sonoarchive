@@ -17,9 +17,10 @@
 2. All 15 files are listed with the right format and duration.
 3. FLAC copies get the same top-5 as their WAV originals; MP3 copies share at least 4 of the 5 CatIDs (lossy encoding may shift scores slightly).
 4. Tag one MP3 and one FLAC; both show all six fields in Soundly and SoundQ.
-5. Decoded audio is identical before and after Save for both files (hash of decoded samples).
+5. The mapping-table names match the `USER` names in F-sm.
+6. Decoded audio is identical before and after Save for both files (hash of decoded samples).
 
 ## Done when
 
-- [ ] Steps 1–5 pass
+- [ ] Steps 1–6 pass
 - [ ] Existing ID3 and Vorbis tags not written by the app (e.g. artist) survive a Save
