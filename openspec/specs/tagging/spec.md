@@ -76,24 +76,29 @@ Tag SHALL show text inputs for FXName, CreatorID, and SourceID. *Save* SHALL be 
 - **WHEN** a CatID is selected, FXName is not empty, and CreatorID and SourceID are empty
 - **THEN** *Save* is enabled
 
-### Requirement: Save writes one label and leaves the file untouched
+### Requirement: Save writes one label and the WAV
 
-*Save* SHALL store one `labels` row for the open file with CatID, FXName, CreatorID, SourceID, the chosen rank, and a timestamp, and SHALL set that file's status to *tagged*. Rank SHALL be the selected suggestion's rank, from 1 to 5, or *manual* when the CatID comes from *Other…*. A later *Save* for the same file SHALL replace that row. *Save* SHALL leave the file on disk unchanged.
+*Save* SHALL write the open WAV's metadata before it stores a label. After that write succeeds, *Save* SHALL store one `labels` row for the open file with CatID, FXName, CreatorID, SourceID, the chosen rank, and a timestamp, and SHALL set that file's status to *tagged*. Rank SHALL be the selected suggestion's rank, from 1 to 5, or *manual* when the CatID comes from *Other…*. A later *Save* for the same file SHALL replace that row and write the WAV again. If the WAV write fails, *Save* SHALL leave the `labels` row and the file status as they were, SHALL leave the original file bytes unchanged, and Tag SHALL show the error.
 
 #### Scenario: Suggestion 2 records rank 2
 
 - **WHEN** the user picks suggestion 2, enters FXName, CreatorID, and SourceID, and activates *Save*
-- **THEN** the `labels` row stores that CatID, those three fields, rank 2, and a timestamp, the file status is *tagged*, and the file bytes on disk are unchanged
+- **THEN** the WAV metadata write succeeds, the `labels` row stores that CatID, those three fields, rank 2, and a timestamp, and the file status is *tagged*
 
 #### Scenario: Other records a manual rank
 
 - **WHEN** the user picks a CatID from *Other…*, enters an FXName, and activates *Save*
-- **THEN** the `labels` row stores rank *manual* and the file bytes on disk are unchanged
+- **THEN** the `labels` row stores rank *manual* and the WAV metadata write has succeeded
 
 #### Scenario: A second Save replaces the row
 
 - **WHEN** the user saves a label for a file that already has one
 - **THEN** that file has one `labels` row and the row is the later save
+
+#### Scenario: A failed write leaves the label and the file
+
+- **WHEN** the open WAV cannot be replaced and the user activates *Save*
+- **THEN** the `labels` row and the file status stay as they were, the original file bytes are unchanged, and Tag shows an error
 
 ### Requirement: Next file opens the next untagged file
 

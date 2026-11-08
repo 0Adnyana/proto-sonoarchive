@@ -41,9 +41,9 @@ import {
   listFiles,
   listUcs,
   openLibrary,
-  saveLabel,
 } from './database'
 import { importWavFolder } from './import-wavs'
+import { saveTaggedWav } from './save-label'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -128,7 +128,7 @@ function registerLibraryHandlers(): void {
     if (!isSaveLabelInput(payload)) {
       throw new Error('Could not save the label.')
     }
-    saveLabel(requireLibrary(), payload)
+    saveTaggedWav(requireLibrary(), payload)
     broadcastLibrary()
   })
 

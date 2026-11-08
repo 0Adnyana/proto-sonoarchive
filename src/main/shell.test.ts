@@ -33,6 +33,7 @@ describe('renderer bridge', () => {
     expect(main).toContain("scheme: 'sonoarchive'")
     expect(main).toContain('net.fetch')
     expect(main).toContain('hasStoredFile')
+    expect(main).toContain('saveTaggedWav')
     const readyBody = main.slice(main.indexOf('app.whenReady'))
     expect(readyBody.indexOf('registerMediaScheme()')).toBeLessThan(
       readyBody.indexOf('createWindow()'),

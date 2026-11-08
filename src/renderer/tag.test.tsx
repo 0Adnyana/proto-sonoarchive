@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react'
+import { toast } from 'sonner'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LibraryFile, SaveLabelInput, UcsEntry } from '../shared/ipc'
 import { App } from './app'
@@ -70,6 +71,7 @@ const quiet: LibraryFile = {
 
 describe('tag screen', () => {
   afterEach(() => {
+    toast.dismiss()
     cleanup()
   })
 
@@ -361,6 +363,40 @@ describe('tag screen', () => {
         name: `CAT${String(753 - catalog.length - 1).padStart(4, '0')} CAT › Sub ${753 - catalog.length - 1}`,
       }),
     ).toBeTruthy()
+  })
+
+  it('shows a thrown save error on the status line without the success toast', async () => {
+    render(
+      <App
+        bridge={bridge({
+          listLibrary: async () => [tone],
+          saveLabel: async () => {
+            throw new Error(
+              'Could not write the tags. The file was left unchanged.',
+            )
+          },
+        })}
+      />,
+    )
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
+    fireEvent.click(
+      await screen.findByRole('radio', { name: 'AIRBrst AIR › Burst 0.250' }),
+    )
+    fireEvent.change(screen.getByRole('textbox', { name: 'FXName' }), {
+      target: { value: 'Door slam' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    const panel = screen.getByRole('tabpanel', { name: 'Tag' })
+    await waitFor(() => {
+      expect(panel.textContent).toContain(
+        'Could not write the tags. The file was left unchanged.',
+      )
+    })
+    expect(panel.querySelector('[role="status"]')?.textContent).toBe(
+      'Could not write the tags. The file was left unchanged.',
+    )
+    expect(screen.queryByText('Saved tone.wav as AIRBrst')).toBeNull()
   })
 })
 

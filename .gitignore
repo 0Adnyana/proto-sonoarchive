@@ -1,3 +1,9 @@
+# macOS
+.DS_Store
+
+# Vitest cache
+.vitest/
+
 # OpenSpec change proposals
 openspec/changes/
 

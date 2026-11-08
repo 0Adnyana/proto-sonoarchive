@@ -304,7 +304,10 @@ export function listFiles(db: LibraryDatabase): LibraryFile[] {
   return listed
 }
 
-export function saveLabel(db: LibraryDatabase, input: SaveLabelInput): void {
+export function assertSavableLabel(
+  db: LibraryDatabase,
+  input: SaveLabelInput,
+): { fxName: string; creatorId: string; sourceId: string } {
   const fxName = input.fxName.trim()
   const creatorId = input.creatorId.trim()
   const sourceId = input.sourceId.trim()
@@ -314,12 +317,26 @@ export function saveLabel(db: LibraryDatabase, input: SaveLabelInput): void {
   if (fxName.length === 0) {
     throw new Error('FXName is empty')
   }
+  if (!db.prepare('SELECT path FROM files WHERE path = ?').get(input.path)) {
+    throw new Error(`No stored file for ${input.path}`)
+  }
+  if (!db.prepare('SELECT CatID FROM ucs WHERE CatID = ?').get(input.catId)) {
+    throw new Error(`Unknown CatID ${input.catId}`)
+  }
+  if (input.rank !== 'manual') {
+    const suggestion = db
+      .prepare(
+        'SELECT CatID AS catId FROM suggestions WHERE path = ? AND rank = ?',
+      )
+      .get(input.path, Number(input.rank)) as { catId: string } | undefined
+    if (!suggestion || suggestion.catId !== input.catId) {
+      throw new Error(`Rank ${input.rank} does not match ${input.catId}`)
+    }
+  }
+  return { fxName, creatorId, sourceId }
+}
 
-  const findFile = db.prepare('SELECT path FROM files WHERE path = ?')
-  const findCat = db.prepare('SELECT CatID FROM ucs WHERE CatID = ?')
-  const findSuggestion = db.prepare(
-    'SELECT CatID AS catId FROM suggestions WHERE path = ? AND rank = ?',
-  )
+export function saveLabel(db: LibraryDatabase, input: SaveLabelInput): void {
   const upsert = db.prepare(
     `INSERT INTO labels (path, CatID, FXName, CreatorID, SourceID, rank, saved_at)
      VALUES (@path, @catId, @fxName, @creatorId, @sourceId, @rank, @savedAt)
@@ -336,26 +353,13 @@ export function saveLabel(db: LibraryDatabase, input: SaveLabelInput): void {
   )
   const savedAt = new Date().toISOString()
   const write = db.transaction(() => {
-    if (!findFile.get(input.path)) {
-      throw new Error(`No stored file for ${input.path}`)
-    }
-    if (!findCat.get(input.catId)) {
-      throw new Error(`Unknown CatID ${input.catId}`)
-    }
-    if (input.rank !== 'manual') {
-      const suggestion = findSuggestion.get(input.path, Number(input.rank)) as
-        | { catId: string }
-        | undefined
-      if (!suggestion || suggestion.catId !== input.catId) {
-        throw new Error(`Rank ${input.rank} does not match ${input.catId}`)
-      }
-    }
+    const prepared = assertSavableLabel(db, input)
     upsert.run({
       path: input.path,
       catId: input.catId,
-      fxName,
-      creatorId,
-      sourceId,
+      fxName: prepared.fxName,
+      creatorId: prepared.creatorId,
+      sourceId: prepared.sourceId,
       rank: input.rank,
       savedAt,
     })
