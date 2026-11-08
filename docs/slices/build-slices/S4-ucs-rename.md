@@ -1,4 +1,4 @@
-# S5 · UCS rename
+# S4 · UCS rename
 
 **Goal:** tick a box on Save and the file gets its UCS filename. **Builds on:** S2.
 

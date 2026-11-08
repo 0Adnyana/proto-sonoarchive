@@ -1,4 +1,4 @@
-# S6 · Search
+# S5 · Search
 
 **Goal:** find tagged files by text, and files that sound like a selected one. **Builds on:** S2 (text search needs tagged files).
 

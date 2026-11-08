@@ -1,4 +1,4 @@
-# S7 · Retrain
+# S6 · Retrain
 
 **Goal:** press *Retrain probe* and get a new, versioned probe that has learnt from the confirmed labels. **Builds on:** S2.
 

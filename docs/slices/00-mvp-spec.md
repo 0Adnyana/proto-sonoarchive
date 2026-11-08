@@ -119,5 +119,5 @@ Two parts; search features are not evaluated.
 ## Open items
 
 - [x] Long files: decided. Files over 10 s are cut into 10 s windows with 50% overlap. Each window goes through CNN14 + probe, and the scores are averaged into one top-5. Files of 10 s or less are embedded whole. Expected to help long files (closer to the training clips); not yet measured.
-- [x] Exact iXML / ID3 / Vorbis field names: decided. Use the open iXML USER fields that Soundly, SoundQ, BaseHead, and Soundminer share, with ID3 TXXX and Vorbis fields under the same names. S2 tests reading in Soundly. SoundQ, and a check against a Soundminer-tagged file, come in a later slice. If a tool needs different names, add a separate export step.
+- [x] Exact iXML / ID3 / Vorbis field names: decided. Use the open iXML USER fields that Soundly, SoundQ, BaseHead, and Soundminer share, with ID3 TXXX and Vorbis fields under the same names. S2 tests reading in Soundly. SoundQ, MP3, FLAC, and a check against a Soundminer-tagged file come in S8, once those files are available. If a tool needs different names, add a separate export step.
 - [x] Rename files to the UCS pattern `CatID_FXName_CreatorID_SourceID`: in scope as an optional checkbox on Save (see Core user flow, step 5).

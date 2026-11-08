@@ -1,4 +1,4 @@
-# S4 · Long files and background analysis
+# S3 · Long files and background analysis
 
 **Goal:** import long files and keep tagging while they analyse in the background. **Builds on:** S1 (S2 for the tagging part of the test).
 

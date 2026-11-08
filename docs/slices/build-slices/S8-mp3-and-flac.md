@@ -1,6 +1,6 @@
-# S3 · MP3 and FLAC
+# S8 · MP3 and FLAC
 
-**Goal:** run the same import-to-save loop for MP3 and FLAC files. **Builds on:** S2.
+**Goal:** run the same import-to-save loop for MP3 and FLAC files. **Builds on:** S2. **Later check:** needs MP3 and FLAC files (F-formats) plus Soundly and SoundQ, so it waits until those are available.
 
 ## Scope
 
