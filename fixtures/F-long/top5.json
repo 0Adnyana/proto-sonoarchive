@@ -1,0 +1,52 @@
+{
+  "365091.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "VEHBike",
+        "score": 0.46495719597846963
+      },
+      {
+        "CatID": "FIRECrkl",
+        "score": 0.1470175991731773
+      },
+      {
+        "CatID": "WATRPour",
+        "score": 0.0627069452073692
+      },
+      {
+        "CatID": "WATRDrip",
+        "score": 0.032590260011140876
+      },
+      {
+        "CatID": "FIRESizz",
+        "score": 0.03113942229607742
+      }
+    ]
+  },
+  "41183.wav": {
+    "probe_version": "paper-all-ucs/pair_all_ucs/seed_42",
+    "top5": [
+      {
+        "CatID": "ANMLInsc",
+        "score": 0.2899630790936695
+      },
+      {
+        "CatID": "AMBInsc",
+        "score": 0.22111378210831342
+      },
+      {
+        "CatID": "MECHPuly",
+        "score": 0.13024705469828965
+      },
+      {
+        "CatID": "ANMLRdnt",
+        "score": 0.07336941063571145
+      },
+      {
+        "CatID": "AMBSprt",
+        "score": 0.07054267513400182
+      }
+    ]
+  }
+}
