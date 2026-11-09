@@ -6,6 +6,7 @@ export const ipcChannels = {
   listLibrary: 'library:list',
   libraryChanged: 'library:changed',
   libraryNotice: 'library:notice',
+  analysisProgress: 'library:analysis-progress',
   listUcs: 'library:list-ucs',
   saveLabel: 'library:save-label',
   mediaUrl: 'library:media-url',
@@ -95,12 +96,20 @@ export type ImportFolderResult = {
   failed: string[]
 }
 
+export type AnalysisProgress = {
+  done: number
+  total: number
+}
+
 export type SonoarchiveBridge = {
   ping: () => Promise<PingSuccess>
   importFolder: () => Promise<ImportFolderResult | null>
   listLibrary: () => Promise<LibraryFile[]>
   onLibraryChanged: (listener: (files: LibraryFile[]) => void) => () => void
   onLibraryNotice: (listener: (message: string) => void) => () => void
+  onAnalysisProgress: (
+    listener: (progress: AnalysisProgress) => void,
+  ) => () => void
   listUcs: () => Promise<UcsEntry[]>
   saveLabel: (input: SaveLabelInput) => Promise<void>
   mediaUrl: (path: string) => Promise<string>
@@ -179,6 +188,16 @@ export function isAnalyseResponse(
 
 export function isLibraryNotice(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
+}
+
+export function isAnalysisProgress(value: unknown): value is AnalysisProgress {
+  return (
+    isRecord(value) &&
+    Object.keys(value).length === 2 &&
+    isWholeNumber(value.done) &&
+    isWholeNumber(value.total) &&
+    value.done <= value.total
+  )
 }
 
 function isSuggestion(value: unknown): value is Suggestion {
@@ -284,6 +303,10 @@ function isRecord(message: unknown): message is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
+}
+
+function isWholeNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
 }
 
 function copyEmbedding(value: unknown): Float32Array | undefined {

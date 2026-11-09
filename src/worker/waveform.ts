@@ -2,6 +2,26 @@ import { spawn } from 'node:child_process'
 import { bundledFfmpeg, DecodeError } from '../main/decode'
 
 export const WAVEFORM_RATE = 32000
+export const WINDOW_SECONDS = 10
+export const HOP_SECONDS = 5
+export const WINDOW_SAMPLES = WINDOW_SECONDS * WAVEFORM_RATE
+export const HOP_SAMPLES = HOP_SECONDS * WAVEFORM_RATE
+
+// A buffer of one window or fewer stays a single clip. A longer buffer keeps a
+// window only when start + window is still inside the buffer, so a short tail
+// is dropped. A 30 second buffer (960_000 samples) yields five windows.
+export function sliceCompleteWindows(waveform: Float32Array): Float32Array[] {
+  if (waveform.length <= WINDOW_SAMPLES) return []
+  const windows: Float32Array[] = []
+  for (
+    let start = 0;
+    start + WINDOW_SAMPLES <= waveform.length;
+    start += HOP_SAMPLES
+  ) {
+    windows.push(waveform.subarray(start, start + WINDOW_SAMPLES))
+  }
+  return windows
+}
 
 export function waveformDecodeArgs(filePath: string): string[] {
   return [

@@ -1,13 +1,16 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
-import type { AnalysisPayload, AnalysisSuccess } from '../shared/ipc'
+import type {
+  AnalysisPayload,
+  AnalysisProgress,
+  AnalysisSuccess,
+} from '../shared/ipc'
 import {
   type AnalysisCandidate,
   type LibraryDatabase,
   replaceSuggestions,
 } from './database'
 
-export const MAX_ANALYSED_SECONDS = 10
 export const ANALYSIS_TIMEOUT_MS = 180_000
 export const CNN14_FILENAME = 'Cnn14_mAP=0.431.onnx'
 export const PROBE_FILENAME = 'probe.json'
@@ -41,10 +44,20 @@ export function pendingAnalysisPaths(
   probeVersion: string | undefined,
 ): AnalysisCandidate[] {
   return candidates.filter((candidate) => {
-    if (!(candidate.duration <= MAX_ANALYSED_SECONDS)) return false
     if (probeVersion === undefined) return true
     return candidate.probeVersion !== probeVersion
   })
+}
+
+export function queueAnalysisBatch(
+  progress: AnalysisProgress,
+  count: number,
+): AnalysisProgress {
+  return { done: progress.done, total: progress.total + count }
+}
+
+export function settleAnalysis(progress: AnalysisProgress): AnalysisProgress {
+  return { done: progress.done + 1, total: progress.total }
 }
 
 export function analysisNotice(filePath: string, message: string): string {

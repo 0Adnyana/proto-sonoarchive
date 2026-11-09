@@ -9,7 +9,12 @@ import {
 } from '@testing-library/react'
 import { toast } from 'sonner'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { LibraryFile, SaveLabelInput, UcsEntry } from '../shared/ipc'
+import type {
+  AnalysisProgress,
+  LibraryFile,
+  SaveLabelInput,
+  UcsEntry,
+} from '../shared/ipc'
 import { App } from './app'
 import type { LibraryBridge } from './library'
 
@@ -365,6 +370,43 @@ describe('tag screen', () => {
     ).toBeTruthy()
   })
 
+  it('opens a finished file on Tag and saves it while another file is still queued', async () => {
+    const saved: string[] = []
+    let publishProgress: (progress: AnalysisProgress) => void = () => {}
+    render(
+      <App
+        bridge={bridge({
+          listLibrary: async () => [tone, quiet],
+          onAnalysisProgress: (listener) => {
+            publishProgress = listener
+            return () => {}
+          },
+          saveLabel: async (input) => {
+            saved.push(input.path)
+          },
+        })}
+      />,
+    )
+
+    publishProgress({ done: 0, total: 1 })
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
+    const tag = screen.getByRole('tabpanel', { name: 'Tag' })
+    expect(tag.textContent).toContain('tone.wav')
+    fireEvent.click(
+      await screen.findByRole('radio', { name: 'AIRBlow AIR › Blow 0.500' }),
+    )
+    fireEvent.change(screen.getByRole('textbox', { name: 'FXName' }), {
+      target: { value: 'Gust' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(saved).toEqual(['/library/tone.wav'])
+    })
+    selectTab('Library')
+    expect(screen.getByRole('status').textContent).toContain('0 / 1 analysed')
+  })
+
   it('shows a thrown save error on the status line without the success toast', async () => {
     render(
       <App
@@ -406,6 +448,7 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
     importFolder: async () => null,
     onLibraryChanged: () => () => {},
     onLibraryNotice: () => () => {},
+    onAnalysisProgress: () => () => {},
     listUcs: async () => catalog,
     saveLabel: async () => {},
     mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,

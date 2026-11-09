@@ -11,6 +11,7 @@ import {
   upsertWav,
 } from '../main/database'
 import { analyseShortWav } from './analyse'
+import { decodeWavWaveform, sliceCompleteWindows } from './waveform'
 
 const modelPath = fileURLToPath(
   new URL('../../models/Cnn14_mAP=0.431.onnx', import.meta.url),
@@ -141,6 +142,35 @@ describe('short wav analysis', () => {
       .get(wav) as { embedding: Uint8Array }
     expect(row.embedding.byteLength).toBe(2048 * 4)
     db.close()
+  })
+
+  it('analyses a 30 second file as five windows and returns one embedding', {
+    timeout: 180_000,
+  }, async (context) => {
+    if (!existsSync(modelPath)) {
+      context.skip('models/Cnn14_mAP=0.431.onnx is absent')
+    }
+
+    const folder = mkdtempSync(join(tmpdir(), 'sonoarchive-long-'))
+    const wav = join(folder, 'long.wav')
+    writePcmWav(wav, 30)
+    const waveform = await decodeWavWaveform(wav)
+    expect(sliceCompleteWindows(waveform)).toHaveLength(5)
+    waveform.fill(0)
+
+    const result = await analyseShortWav({
+      filePath: wav,
+      modelPath,
+      probePath,
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result).not.toHaveProperty('waveform')
+    expect(result.embedding).toBeInstanceOf(Float32Array)
+    expect(result.embedding.length).toBe(2048)
+    expect(result.probeVersion).toBe(readProbeVersion(probePath))
+    expect(result.suggestions).toHaveLength(5)
   })
 })
 

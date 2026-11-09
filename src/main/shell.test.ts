@@ -23,6 +23,8 @@ describe('renderer bridge', () => {
     expect(preload).toContain('listLibrary')
     expect(preload).toContain('onLibraryChanged')
     expect(preload).toContain('onLibraryNotice')
+    expect(preload).toContain('onAnalysisProgress')
+    expect(main).toContain('analysisProgress')
     expect(preload).toContain('listUcs')
     expect(preload).toContain('saveLabel')
     expect(preload).toContain('mediaUrl')

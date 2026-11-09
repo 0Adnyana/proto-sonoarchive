@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { LibraryFile, UcsEntry } from '../shared/ipc'
+import type { AnalysisProgress, LibraryFile, UcsEntry } from '../shared/ipc'
 import {
   errorText,
   formatImportStatus,
@@ -23,7 +23,8 @@ export function App({ bridge }: AppProps) {
   const [catalogNotice, setCatalogNotice] = useState('')
   const [baseStatus, setBaseStatus] = useState('')
   const [notices, setNotices] = useState<string[]>([])
-  const status = formatLibraryStatus(baseStatus, notices)
+  const [progress, setProgress] = useState<AnalysisProgress | null>(null)
+  const status = formatLibraryStatus(baseStatus, notices, progress)
   const openFile = files.find((file) => file.path === openPath) ?? null
 
   useEffect(() => {
@@ -51,11 +52,16 @@ export function App({ bridge }: AppProps) {
       seenNotices.push(notice)
       setNotices([...seenNotices])
     })
+    const unsubscribeProgress = bridge.onAnalysisProgress((next) => {
+      if (!active) return
+      setProgress(next)
+    })
 
     return () => {
       active = false
       unsubscribe()
       unsubscribeNotice()
+      unsubscribeProgress()
     }
   }, [bridge])
 

@@ -9,8 +9,10 @@ import {
   drainAnalysis,
   PROBE_FILENAME,
   pendingAnalysisPaths,
+  queueAnalysisBatch,
   readProbeVersion,
   resolveBundledFile,
+  settleAnalysis,
   storeAnalysis,
 } from './analysis'
 import {
@@ -56,7 +58,7 @@ describe('analysis queue', () => {
     ).toBeUndefined()
   })
 
-  it('keeps a 10 second file and skips a longer one or a current probe version', () => {
+  it('keeps a 10 second file and a longer one, and skips a current probe version', () => {
     const files = [
       {
         path: '/exact.wav',
@@ -80,7 +82,7 @@ describe('analysis queue', () => {
 
     expect(
       pendingAnalysisPaths(files, 'probe-a').map((file) => file.path),
-    ).toEqual(['/exact.wav'])
+    ).toEqual(['/exact.wav', '/long.wav'])
     expect(analysisNotice('/library/tone.wav', 'CNN14 model is missing.')).toBe(
       'Could not analyse tone.wav. CNN14 model is missing.',
     )
@@ -106,7 +108,7 @@ describe('analysis queue', () => {
       listAnalysisCandidates(db),
       'probe-a',
     ).map((file) => file.name)
-    expect(pending).toEqual(['quiet.wav'])
+    expect(pending).toEqual(['long.wav', 'quiet.wav'])
     expect(
       listFiles(db).find((file) => file.name === 'long.wav'),
     ).toMatchObject({ catId: null, suggestions: [] })
@@ -167,6 +169,18 @@ describe('analysis queue', () => {
     releaseFirst()
     await done
     expect(seen).toEqual(['/a.wav', '/b.wav'])
+  })
+
+  it('counts a settled failure and appends a later batch', () => {
+    let progress = queueAnalysisBatch({ done: 0, total: 0 }, 2)
+    progress = settleAnalysis(progress)
+    progress = settleAnalysis(progress)
+    expect(progress).toEqual({ done: 2, total: 2 })
+    expect(queueAnalysisBatch(progress, 1)).toEqual({ done: 2, total: 3 })
+    expect(queueAnalysisBatch({ done: 0, total: 0 }, 0)).toEqual({
+      done: 0,
+      total: 0,
+    })
   })
 })
 

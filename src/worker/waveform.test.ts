@@ -5,7 +5,10 @@ import { describe, expect, it } from 'vitest'
 import { bundledFfmpeg } from '../main/decode'
 import {
   decodeWavWaveform,
+  HOP_SAMPLES,
+  sliceCompleteWindows,
   WAVEFORM_RATE,
+  WINDOW_SAMPLES,
   waveformDecodeArgs,
 } from './waveform'
 
@@ -27,6 +30,29 @@ describe('waveform decode', () => {
     expect(waveform).toBeInstanceOf(Float32Array)
     expect(waveform.length).toBe(10 * WAVEFORM_RATE)
     expect(readdirSync(folder)).toEqual(before)
+  })
+
+  it('keeps five complete windows from a 30 second buffer and drops a short tail', () => {
+    const exact = sliceCompleteWindows(new Float32Array(960_000))
+    expect(exact).toHaveLength(5)
+    expect(exact.every((window) => window.length === WINDOW_SAMPLES)).toBe(true)
+    expect(WINDOW_SAMPLES).toBe(320_000)
+    expect(HOP_SAMPLES).toBe(160_000)
+
+    const tailed = new Float32Array(960_000 + HOP_SAMPLES - 1)
+    tailed[0] = 1
+    tailed[HOP_SAMPLES] = 2
+    tailed[960_000] = 9
+    const windows = sliceCompleteWindows(tailed)
+    expect(windows).toHaveLength(5)
+    expect(windows[0]?.[0]).toBe(1)
+    expect(windows[1]?.[0]).toBe(2)
+    expect(windows[4]?.[WINDOW_SAMPLES - 1]).toBe(0)
+  })
+
+  it('does not slice a buffer of 10 seconds or fewer', () => {
+    expect(sliceCompleteWindows(new Float32Array(WINDOW_SAMPLES))).toEqual([])
+    expect(sliceCompleteWindows(new Float32Array(WAVEFORM_RATE))).toEqual([])
   })
 })
 

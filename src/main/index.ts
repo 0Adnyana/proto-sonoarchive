@@ -13,6 +13,7 @@ import {
 } from 'electron'
 import {
   type AnalysisPayload,
+  type AnalysisProgress,
   type ImportFolderResult,
   ipcChannels,
   isPingSuccess,
@@ -30,8 +31,10 @@ import {
   drainAnalysis,
   PROBE_FILENAME,
   pendingAnalysisPaths,
+  queueAnalysisBatch,
   readProbeVersion,
   resolveBundledFile,
+  settleAnalysis,
   storeAnalysis,
 } from './analysis'
 import {
@@ -69,6 +72,7 @@ let library: LibraryDatabase | undefined
 let libraryError: Error | undefined
 let analysisId = 0
 let analysisTail: Promise<void> = Promise.resolve()
+let analysisProgress: AnalysisProgress = { done: 0, total: 0 }
 const analysisQueued = new Set<string>()
 const analysisWaiters = new Map<
   number,
@@ -252,6 +256,16 @@ function broadcastNotice(message: string): void {
   }
 }
 
+function broadcastProgress(): void {
+  const payload: AnalysisProgress = {
+    done: analysisProgress.done,
+    total: analysisProgress.total,
+  }
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send(ipcChannels.analysisProgress, payload)
+  }
+}
+
 function requestAnalysis(filePath: string): Promise<AnalysisPayload> {
   const child = worker
   if (!child) return Promise.resolve({ ok: false, message: 'Analysis failed.' })
@@ -282,6 +296,8 @@ function enqueuePendingAnalysis(): void {
   ).filter((file) => !analysisQueued.has(file.path))
   if (pending.length === 0) return
   for (const file of pending) analysisQueued.add(file.path)
+  analysisProgress = queueAnalysisBatch(analysisProgress, pending.length)
+  broadcastProgress()
   analysisTail = analysisTail
     .then(() =>
       drainAnalysis(
@@ -293,6 +309,8 @@ function enqueuePendingAnalysis(): void {
           }),
         (file, result) => {
           analysisQueued.delete(file.path)
+          analysisProgress = settleAnalysis(analysisProgress)
+          broadcastProgress()
           if (!library) return
           try {
             if (!storeAnalysis(library, file.path, result)) {

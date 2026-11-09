@@ -1,6 +1,8 @@
 import { contextBridge, type IpcRendererEvent, ipcRenderer } from 'electron'
 import {
+  type AnalysisProgress,
   ipcChannels,
+  isAnalysisProgress,
   isImportFolderResult,
   isLibraryFileList,
   isLibraryNotice,
@@ -13,12 +15,23 @@ import {
 import { createNoticeHub } from '../shared/notice-hub'
 
 const notices = createNoticeHub()
+let analysisProgress: AnalysisProgress | undefined
+let progressListener: ((progress: AnalysisProgress) => void) | undefined
 
 ipcRenderer.on(
   ipcChannels.libraryNotice,
   (_event: IpcRendererEvent, payload: unknown) => {
     if (!isLibraryNotice(payload)) return
     notices.push(payload)
+  },
+)
+
+ipcRenderer.on(
+  ipcChannels.analysisProgress,
+  (_event: IpcRendererEvent, payload: unknown) => {
+    if (!isAnalysisProgress(payload)) return
+    analysisProgress = payload
+    progressListener?.(payload)
   },
 )
 
@@ -57,6 +70,13 @@ const api: SonoarchiveBridge = {
   },
   onLibraryNotice: (listener: (message: string) => void) =>
     notices.subscribe(listener),
+  onAnalysisProgress: (listener: (progress: AnalysisProgress) => void) => {
+    progressListener = listener
+    if (analysisProgress) listener(analysisProgress)
+    return () => {
+      if (progressListener === listener) progressListener = undefined
+    }
+  },
   listUcs: async () => {
     const result: unknown = await ipcRenderer.invoke(ipcChannels.listUcs)
     if (!isUcsEntryList(result)) {

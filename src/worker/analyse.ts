@@ -1,11 +1,23 @@
 import { existsSync } from 'node:fs'
 import * as ort from 'onnxruntime-node'
 import { DecodeError } from '../main/decode'
-import type { ProbeVectors } from '../main/probe'
-import { scoreEmbedding } from '../main/probe'
+import {
+  averageEmbeddings,
+  averageScoreVectors,
+  type ProbeScore,
+  type ProbeVectors,
+  rankScores,
+  scoreEmbedding,
+  softmaxVector,
+} from '../main/probe'
 import type { AnalysisPayload } from '../shared/ipc'
 import { readProbeFile } from './probe-file'
-import { decodeWavWaveform, WAVEFORM_RATE } from './waveform'
+import {
+  decodeWavWaveform,
+  sliceCompleteWindows,
+  WAVEFORM_RATE,
+  WINDOW_SAMPLES,
+} from './waveform'
 
 const EMBEDDING_DIM = 2048
 
@@ -36,23 +48,12 @@ export async function analyseShortWav(
   let waveform: Float32Array | undefined
   try {
     waveform = await decodeWavWaveform(input.filePath)
-    const embedding = await embedWaveform(input.modelPath, waveform)
-    const scored = scoreEmbedding(embedding, probeFor(input.probePath))
-    if (
-      scored.suggestions.length !== 5 ||
-      scored.suggestions.some(
-        (suggestion) =>
-          suggestion.catId.length === 0 || !Number.isFinite(suggestion.score),
-      )
-    ) {
-      return { ok: false, message: 'Analysis failed.' }
-    }
-    return {
-      ok: true,
-      embedding,
-      probeVersion: scored.version,
-      suggestions: scored.suggestions,
-    }
+    const probe = probeFor(input.probePath)
+    const scored =
+      waveform.length <= WINDOW_SAMPLES
+        ? await scoreSingleClip(input.modelPath, waveform, probe)
+        : await scoreWindows(input.modelPath, waveform, probe)
+    return scored
   } catch (error) {
     if (error instanceof DecodeError) {
       return { ok: false, message: 'Could not decode the file.' }
@@ -61,6 +62,60 @@ export async function analyseShortWav(
     return { ok: false, message: 'Analysis failed.' }
   } finally {
     waveform?.fill(0)
+  }
+}
+
+async function scoreSingleClip(
+  modelPath: string,
+  waveform: Float32Array,
+  probe: ProbeVectors,
+): Promise<AnalysisPayload> {
+  const embedding = await embedWaveform(modelPath, waveform)
+  return analysisPayload(embedding, scoreEmbedding(embedding, probe))
+}
+
+async function scoreWindows(
+  modelPath: string,
+  waveform: Float32Array,
+  probe: ProbeVectors,
+): Promise<AnalysisPayload> {
+  const windows = sliceCompleteWindows(waveform)
+  if (windows.length === 0) {
+    return { ok: false, message: 'Analysis failed.' }
+  }
+  const embeddings: Float32Array[] = []
+  const scores: Float64Array[] = []
+  for (const window of windows) {
+    const embedding = await embedWaveform(modelPath, window)
+    embeddings.push(embedding)
+    // Rank the mean of these vectors. Scoring the mean embedding disagrees
+    // with the window average.
+    scores.push(softmaxVector(embedding, probe))
+  }
+  return analysisPayload(
+    averageEmbeddings(embeddings),
+    rankScores(averageScoreVectors(scores), probe),
+  )
+}
+
+function analysisPayload(
+  embedding: Float32Array,
+  scored: ProbeScore,
+): AnalysisPayload {
+  if (
+    scored.suggestions.length !== 5 ||
+    scored.suggestions.some(
+      (suggestion) =>
+        suggestion.catId.length === 0 || !Number.isFinite(suggestion.score),
+    )
+  ) {
+    return { ok: false, message: 'Analysis failed.' }
+  }
+  return {
+    ok: true,
+    embedding,
+    probeVersion: scored.version,
+    suggestions: scored.suggestions,
   }
 }
 

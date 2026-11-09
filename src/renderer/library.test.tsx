@@ -8,7 +8,11 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { ImportFolderResult, LibraryFile } from '../shared/ipc'
+import type {
+  AnalysisProgress,
+  ImportFolderResult,
+  LibraryFile,
+} from '../shared/ipc'
 import { App } from './app'
 import { formatImportStatus, type LibraryBridge } from './library'
 
@@ -79,6 +83,7 @@ describe('library screen', () => {
       'textContent',
       'Stored 2 files. Could not decode broken.wav.',
     )
+    expect(screen.getByRole('status').textContent).not.toContain('analysed')
     expect(formatImportStatus({ stored: 1, failed: [] })).toBe('Stored 1 file.')
   })
 
@@ -112,6 +117,63 @@ describe('library screen', () => {
     await waitFor(() => {
       expect(screen.getByRole('status').textContent).toBe(
         'Stored 2 files. Could not analyse tone.wav. CNN14 model is missing.',
+      )
+    })
+  })
+
+  it('replaces the analysis count, keeps a failure beside it, and keeps the count across tabs', async () => {
+    let finish: (result: ImportFolderResult | null) => void = () => {}
+    let publishProgress: (progress: AnalysisProgress) => void = () => {}
+    let publishNotice: (notice: string) => void = () => {}
+    render(
+      <App
+        bridge={bridge({
+          importFolder: () =>
+            new Promise((resolve) => {
+              finish = resolve
+            }),
+          onAnalysisProgress: (listener) => {
+            publishProgress = listener
+            return () => {}
+          },
+          onLibraryNotice: (listener) => {
+            publishNotice = listener
+            return () => {}
+          },
+        })}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import folder' }))
+    finish({ stored: 2, failed: [] })
+    expect(await screen.findByRole('status')).toHaveProperty(
+      'textContent',
+      'Stored 2 files.',
+    )
+
+    publishProgress({ done: 1, total: 2 })
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toBe(
+        'Stored 2 files. 1 / 2 analysed',
+      )
+    })
+
+    selectTab('Tag')
+    publishProgress({ done: 2, total: 2 })
+    selectTab('Library')
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toBe(
+        'Stored 2 files. 2 / 2 analysed',
+      )
+    })
+    expect(screen.getByRole('status').textContent).not.toContain(
+      '1 / 2 analysed',
+    )
+
+    publishNotice('Could not analyse tone.wav. CNN14 model is missing.')
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toBe(
+        'Stored 2 files. 2 / 2 analysed Could not analyse tone.wav. CNN14 model is missing.',
       )
     })
   })
@@ -233,6 +295,7 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
     importFolder: async () => null,
     onLibraryChanged: () => () => {},
     onLibraryNotice: () => () => {},
+    onAnalysisProgress: () => () => {},
     listUcs: async () => [],
     saveLabel: async () => {},
     mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,

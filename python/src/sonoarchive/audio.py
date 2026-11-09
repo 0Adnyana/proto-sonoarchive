@@ -3,6 +3,8 @@
 from pathlib import Path
 
 SAMPLE_RATE = 32000
+WINDOW_SAMPLES = 10 * SAMPLE_RATE
+HOP_SAMPLES = 5 * SAMPLE_RATE
 
 
 def load_mono(path: Path):
@@ -28,3 +30,21 @@ def pad_to_one_second(waveform):
     if missing <= 0:
         return waveform
     return np.pad(waveform, (0, missing))
+
+
+def complete_windows(waveform):
+    """Return complete 10 second windows at a 5 second hop.
+
+    A buffer of one window or fewer is not sliced. A start is kept only when
+    the window fits completely, so a short tail is dropped.
+    """
+    import numpy as np
+
+    waveform = np.asarray(waveform, dtype=np.float32)
+    count = waveform.shape[0]
+    if count <= WINDOW_SAMPLES:
+        return []
+    return [
+        waveform[start : start + WINDOW_SAMPLES]
+        for start in range(0, count - WINDOW_SAMPLES + 1, HOP_SAMPLES)
+    ]

@@ -85,7 +85,7 @@ describe('wav import', () => {
     db.close()
   })
 
-  it('clears suggestions when a path is imported longer than 10 seconds', async () => {
+  it('keeps suggestions when a path is reimported longer than 10 seconds', async () => {
     const folder = mkdtempSync(join(tmpdir(), 'sonoarchive-long-'))
     const filePath = join(folder, 'tone.wav')
     const db = openLibrary(join(folder, 'library.db'))
@@ -114,13 +114,13 @@ describe('wav import', () => {
         format: 'wav',
         duration: readStoredFile(db, resolve(filePath))?.duration,
         status: 'untagged',
-        catId: null,
-        suggestions: [],
+        catId: 'AIRBlow',
+        suggestions,
         label: null,
       },
     ])
-    expect(countEmbeddings(db)).toBe(0)
-    expect(countSuggestions(db)).toBe(0)
+    expect(countEmbeddings(db)).toBe(1)
+    expect(countSuggestions(db)).toBe(5)
     db.close()
   })
 })

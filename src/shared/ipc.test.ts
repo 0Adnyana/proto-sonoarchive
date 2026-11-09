@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ipcChannels,
+  isAnalysisProgress,
   isImportFolderResult,
   isLibraryFileList,
   isPingRequest,
@@ -17,6 +18,7 @@ describe('ipc', () => {
     expect(ipcChannels.listLibrary).toBe('library:list')
     expect(ipcChannels.libraryChanged).toBe('library:changed')
     expect(ipcChannels.libraryNotice).toBe('library:notice')
+    expect(ipcChannels.analysisProgress).toBe('library:analysis-progress')
     expect(ipcChannels.listUcs).toBe('library:list-ucs')
     expect(ipcChannels.saveLabel).toBe('library:save-label')
     expect(ipcChannels.mediaUrl).toBe('library:media-url')
@@ -89,6 +91,9 @@ describe('ipc', () => {
         { ...file, suggestions: [{ catId: 'AIRBlow', score: Number.NaN }] },
       ]),
     ).toBe(false)
+    expect(isAnalysisProgress({ done: 1, total: 2 })).toBe(true)
+    expect(isAnalysisProgress({ done: 3, total: 2 })).toBe(false)
+    expect(isAnalysisProgress({ done: 1, total: 2, extra: true })).toBe(false)
     expect(isImportFolderResult({ stored: 1, failed: ['bad.wav'] })).toBe(true)
     expect(isImportFolderResult({ stored: 1, failed: [1] })).toBe(false)
   })

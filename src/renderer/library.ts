@@ -1,4 +1,8 @@
-import type { ImportFolderResult, SonoarchiveBridge } from '../shared/ipc'
+import type {
+  AnalysisProgress,
+  ImportFolderResult,
+  SonoarchiveBridge,
+} from '../shared/ipc'
 
 export type LibraryBridge = Pick<
   SonoarchiveBridge,
@@ -6,6 +10,7 @@ export type LibraryBridge = Pick<
   | 'listLibrary'
   | 'onLibraryChanged'
   | 'onLibraryNotice'
+  | 'onAnalysisProgress'
   | 'listUcs'
   | 'saveLabel'
   | 'mediaUrl'
@@ -29,13 +34,25 @@ export function appendAnalysisNotice(status: string, notice: string): string {
   return `${status} ${notice}`
 }
 
+export function formatAnalysisProgress(
+  progress: AnalysisProgress | null,
+): string {
+  if (!progress || progress.total === 0) return ''
+  return `${progress.done} / ${progress.total} analysed`
+}
+
 export function formatLibraryStatus(
   base: string,
   notices: readonly string[],
+  progress: AnalysisProgress | null = null,
 ): string {
+  const withProgress = appendAnalysisNotice(
+    base,
+    formatAnalysisProgress(progress),
+  )
   return notices.reduce(
     (status, notice) => appendAnalysisNotice(status, notice),
-    base,
+    withProgress,
   )
 }
 
