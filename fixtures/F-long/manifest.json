@@ -1,0 +1,30 @@
+{
+  "dataset": "EnvSound-UCS",
+  "split": "test",
+  "files": [
+    {
+      "filename": "365091.wav",
+      "path": "FSD50K/FSD50K.dev_audio/365091.wav",
+      "source": "FSD50K",
+      "Category": "WATER",
+      "SubCategory": "",
+      "duration_seconds": 30.0,
+      "sample_rate": 44100,
+      "channels": 1,
+      "frames": 1323000,
+      "windows": 5
+    },
+    {
+      "filename": "41183.wav",
+      "path": "FSD50K/FSD50K.dev_audio/41183.wav",
+      "source": "FSD50K",
+      "Category": "ANIMALS",
+      "SubCategory": "INSECT",
+      "duration_seconds": 30.0,
+      "sample_rate": 44100,
+      "channels": 1,
+      "frames": 1323000,
+      "windows": 5
+    }
+  ]
+}

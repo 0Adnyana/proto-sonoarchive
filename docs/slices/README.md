@@ -15,5 +15,6 @@ Exported from the "Sonoarchive MVP Spec" doc on 30 Oct 2026.
 | [build-slices/S6-retrain.md](build-slices/S6-retrain.md) | S6 · Retrain |
 | [build-slices/S7-evaluation.md](build-slices/S7-evaluation.md) | S7 · Evaluation harness |
 | [build-slices/S8-mp3-and-flac.md](build-slices/S8-mp3-and-flac.md) | S8 · MP3 and FLAC (later check) |
+| [build-slices/S9-ten-minute-file.md](build-slices/S9-ten-minute-file.md) | S9 · Ten-minute file (later check) |
 
 Build one slice at a time: each slice file is self-contained, with its goal, scope, end-to-end test and "done when" checklist.

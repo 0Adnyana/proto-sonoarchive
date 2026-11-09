@@ -9,17 +9,16 @@
 - Analysis runs as a background queue in the worker; the Library shows a progress line (e.g. 12 / 40 analysed).
 - The UI stays responsive while the queue runs.
 
-**Not in this slice:** prioritising the selected file, different window sizes.
+**Not in this slice:** prioritising the selected file, different window sizes, a 10-minute file (S9).
 
 ## End-to-end test
 
 1. Import F-long together with F-short.
 2. The progress line counts up until every file is analysed.
-3. While the 10-minute file is still analysing, tag and save a short file without delay.
-4. The 1-minute file uses 11 windows and the 10-minute file 119 (window starts every 5 s).
-5. Both long files' top-5 match a Python reference computed with the same windowing; stored embeddings equal the window average.
+3. Each F-long file is 30 s and uses 5 windows (a window starts every 5 s, and only a window that fits completely is kept).
+4. Both files' top-5 match a Python reference computed with the same windowing; stored embeddings equal the window average.
 
 ## Done when
 
-- [ ] Steps 1–5 pass
+- [ ] Steps 1–4 pass
 - [ ] Closing the app mid-queue and reopening it resumes analysis of the remaining files
