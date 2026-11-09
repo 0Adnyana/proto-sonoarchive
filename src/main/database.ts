@@ -475,6 +475,18 @@ function labelFromRow(row: ListedRow): LibraryLabel | null {
   }
 }
 
+export function resetLibrary(db: LibraryDatabase): void {
+  const reset = db.transaction(() => {
+    db.exec(`
+      DELETE FROM suggestions;
+      DELETE FROM labels;
+      DELETE FROM embeddings;
+      DELETE FROM files;
+    `)
+  })
+  reset()
+}
+
 export function countFiles(db: LibraryDatabase): number {
   return countRows(db, 'SELECT COUNT(*) AS count FROM files')
 }

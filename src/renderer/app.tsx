@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { AnalysisProgress, LibraryFile, UcsEntry } from '../shared/ipc'
@@ -24,13 +24,15 @@ export function App({ bridge }: AppProps) {
   const [baseStatus, setBaseStatus] = useState('')
   const [notices, setNotices] = useState<string[]>([])
   const [progress, setProgress] = useState<AnalysisProgress | null>(null)
+  const [resetting, setResetting] = useState(false)
+  const noticesRef = useRef<string[]>([])
   const status = formatLibraryStatus(baseStatus, notices, progress)
   const openFile = files.find((file) => file.path === openPath) ?? null
 
   useEffect(() => {
     let seenChange = false
     let active = true
-    const seenNotices: string[] = []
+    noticesRef.current = []
 
     void bridge
       .listLibrary()
@@ -49,8 +51,8 @@ export function App({ bridge }: AppProps) {
     })
     const unsubscribeNotice = bridge.onLibraryNotice((notice) => {
       if (!active) return
-      seenNotices.push(notice)
-      setNotices([...seenNotices])
+      noticesRef.current = [...noticesRef.current, notice]
+      setNotices(noticesRef.current)
     })
     const unsubscribeProgress = bridge.onAnalysisProgress((next) => {
       if (!active) return
@@ -87,6 +89,27 @@ export function App({ bridge }: AppProps) {
     setTab('tag')
   }
 
+  function onReset(): void {
+    setResetting(true)
+    // Keep a rejection from a missing or throwing bridge off the click handler,
+    // so the confirmation dialog can close and the button can be used again.
+    void Promise.resolve()
+      .then(() => bridge.resetLibrary())
+      .then(() => {
+        noticesRef.current = []
+        setNotices([])
+        setProgress(null)
+        setOpenPath(null)
+        setBaseStatus('Database reset.')
+      })
+      .catch((error: unknown) => {
+        setBaseStatus(errorText(error))
+      })
+      .finally(() => {
+        setResetting(false)
+      })
+  }
+
   function onImport(): void {
     void bridge
       .importFolder()
@@ -112,7 +135,9 @@ export function App({ bridge }: AppProps) {
             files={files}
             status={status}
             selectedPath={openPath}
+            resetting={resetting}
             onImport={onImport}
+            onReset={onReset}
             onOpen={openLibraryFile}
           />
         </TabsContent>

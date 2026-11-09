@@ -22,6 +22,7 @@ describe('ipc', () => {
     expect(ipcChannels.listUcs).toBe('library:list-ucs')
     expect(ipcChannels.saveLabel).toBe('library:save-label')
     expect(ipcChannels.mediaUrl).toBe('library:media-url')
+    expect(ipcChannels.resetLibrary).toBe('library:reset')
   })
 
   it('recognises the ping payloads', () => {

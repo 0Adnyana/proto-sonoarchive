@@ -14,6 +14,7 @@ export type LibraryBridge = Pick<
   | 'listUcs'
   | 'saveLabel'
   | 'mediaUrl'
+  | 'resetLibrary'
 >
 
 export function formatDurationSeconds(duration: number): string {

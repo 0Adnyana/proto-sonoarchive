@@ -97,6 +97,9 @@ const api: SonoarchiveBridge = {
     }
     return result
   },
+  resetLibrary: async () => {
+    await ipcRenderer.invoke(ipcChannels.resetLibrary)
+  },
 }
 
 contextBridge.exposeInMainWorld('sonoarchive', api)

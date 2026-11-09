@@ -44,6 +44,7 @@ import {
   listFiles,
   listUcs,
   openLibrary,
+  resetLibrary,
 } from './database'
 import { importWavFolder } from './import-wavs'
 import { saveTaggedWav } from './save-label'
@@ -71,6 +72,7 @@ let worker: UtilityProcess | undefined
 let library: LibraryDatabase | undefined
 let libraryError: Error | undefined
 let analysisId = 0
+let analysisGeneration = 0
 let analysisTail: Promise<void> = Promise.resolve()
 let analysisProgress: AnalysisProgress = { done: 0, total: 0 }
 const analysisQueued = new Set<string>()
@@ -164,6 +166,12 @@ function registerLibraryHandlers(): void {
       return { stored: result.stored, failed: result.failed }
     },
   )
+
+  ipcMain.handle(ipcChannels.resetLibrary, () => {
+    resetLibrary(requireLibrary())
+    cancelAnalysis()
+    broadcastLibrary()
+  })
 }
 
 function createWindow(): void {
@@ -287,9 +295,17 @@ function requestAnalysis(filePath: string): Promise<AnalysisPayload> {
   })
 }
 
+function cancelAnalysis(): void {
+  analysisGeneration += 1
+  analysisQueued.clear()
+  analysisProgress = { done: 0, total: 0 }
+  broadcastProgress()
+}
+
 function enqueuePendingAnalysis(): void {
   if (!library) return
   const db = library
+  const generation = analysisGeneration
   const pending = pendingAnalysisPaths(
     listAnalysisCandidates(db),
     readProbeVersion(resolveProbePath()),
@@ -309,9 +325,9 @@ function enqueuePendingAnalysis(): void {
           }),
         (file, result) => {
           analysisQueued.delete(file.path)
+          if (generation !== analysisGeneration || !library) return
           analysisProgress = settleAnalysis(analysisProgress)
           broadcastProgress()
-          if (!library) return
           try {
             if (!storeAnalysis(library, file.path, result)) {
               broadcastNotice(analysisNotice(file.path, result.message))

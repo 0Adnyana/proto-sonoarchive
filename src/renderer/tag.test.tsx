@@ -452,6 +452,7 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
     listUcs: async () => catalog,
     saveLabel: async () => {},
     mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,
+    resetLibrary: async () => {},
     ...overrides,
   }
 }

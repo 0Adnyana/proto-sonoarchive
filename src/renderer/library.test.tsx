@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import type {
@@ -272,6 +273,86 @@ describe('library screen', () => {
     expect(screen.queryByRole('table')).toBeNull()
   })
 
+  it('asks before resetting the database and then clears the library', async () => {
+    let publish: (rows: LibraryFile[]) => void = () => {}
+    let resets = 0
+    render(
+      <App
+        bridge={bridge({
+          listLibrary: async () => [tone],
+          onLibraryChanged: (listener) => {
+            publish = listener
+            return () => {}
+          },
+          resetLibrary: async () => {
+            resets += 1
+            publish([])
+          },
+        })}
+      />,
+    )
+
+    expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Reset database' }))
+
+    const dialog = await screen.findByRole('alertdialog', {
+      name: 'Reset database?',
+    })
+    expect(dialog.textContent).toContain('Audio files on disk stay')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(resets).toBe(0)
+    expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset database' }))
+    const confirm = await screen.findByRole('alertdialog', {
+      name: 'Reset database?',
+    })
+    fireEvent.click(
+      within(confirm).getByRole('button', { name: 'Reset database' }),
+    )
+
+    expect(await screen.findByRole('status')).toHaveProperty(
+      'textContent',
+      'Database reset.',
+    )
+    expect(screen.queryByRole('cell', { name: 'tone.wav' })).toBeNull()
+    expect(resets).toBe(1)
+  })
+
+  it('leaves the library in place and re-enables reset when reset fails', async () => {
+    render(
+      <App
+        bridge={bridge({
+          listLibrary: async () => [tone],
+          resetLibrary: async () => {
+            throw new Error('Could not reset the library.')
+          },
+        })}
+      />,
+    )
+
+    expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Reset database' }))
+    const dialog = await screen.findByRole('alertdialog', {
+      name: 'Reset database?',
+    })
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Reset database' }),
+    )
+
+    expect(await screen.findByRole('status')).toHaveProperty(
+      'textContent',
+      'Could not reset the library.',
+    )
+    expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+    expect(
+      screen
+        .getByRole('button', { name: 'Reset database' })
+        .hasAttribute('disabled'),
+    ).toBe(false)
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+
   it('shows a database failure on the status line', async () => {
     render(
       <App
@@ -299,6 +380,7 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
     listUcs: async () => [],
     saveLabel: async () => {},
     mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,
+    resetLibrary: async () => {},
     ...overrides,
   }
 }

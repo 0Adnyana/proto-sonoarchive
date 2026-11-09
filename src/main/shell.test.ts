@@ -28,6 +28,9 @@ describe('renderer bridge', () => {
     expect(preload).toContain('listUcs')
     expect(preload).toContain('saveLabel')
     expect(preload).toContain('mediaUrl')
+    expect(preload).toContain('resetLibrary')
+    expect(main).toContain('resetLibrary')
+    expect(main).toContain('cancelAnalysis')
     expect(main.indexOf('registerSchemesAsPrivileged')).toBeGreaterThan(-1)
     expect(main.indexOf('registerSchemesAsPrivileged')).toBeLessThan(
       main.indexOf('app.whenReady'),

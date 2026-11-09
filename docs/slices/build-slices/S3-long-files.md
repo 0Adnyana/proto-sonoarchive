@@ -20,5 +20,5 @@
 
 ## Done when
 
-- [ ] Steps 1–4 pass
-- [ ] Closing the app mid-queue and reopening it resumes analysis of the remaining files
+- [x] Steps 1–4 pass
+- [x] Closing the app mid-queue and reopening it resumes analysis of the remaining files

@@ -10,6 +10,7 @@ export const ipcChannels = {
   listUcs: 'library:list-ucs',
   saveLabel: 'library:save-label',
   mediaUrl: 'library:media-url',
+  resetLibrary: 'library:reset',
 } as const
 
 export type PingRequest = {
@@ -113,6 +114,7 @@ export type SonoarchiveBridge = {
   listUcs: () => Promise<UcsEntry[]>
   saveLabel: (input: SaveLabelInput) => Promise<void>
   mediaUrl: (path: string) => Promise<string>
+  resetLibrary: () => Promise<void>
 }
 
 export function isPingRequest(message: unknown): message is PingRequest {
