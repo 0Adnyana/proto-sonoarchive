@@ -21,4 +21,4 @@
 
 ## Done when
 
-- [ ] Steps 1–5 pass
+- [x] Steps 1–5 pass

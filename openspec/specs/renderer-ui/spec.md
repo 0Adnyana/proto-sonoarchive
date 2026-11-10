@@ -3,9 +3,7 @@
 ## Purpose
 
 TBD
-
 ## Requirements
-
 ### Requirement: Renderer is a React application
 
 The desktop renderer SHALL mount one React root into a single mount node. The HTML document, before the script runs, SHALL NOT contain the Library, Tag, or Search markup. After the root renders, the document SHALL contain a tab and a panel for Library, Tag, and Search.
@@ -22,12 +20,12 @@ The desktop renderer SHALL mount one React root into a single mount node. The HT
 
 ### Requirement: Shell and Library use the shared component set
 
-The repository SHALL install shadcn for the renderer and SHALL include its button, tabs, table, input, label, radio-group, and select components under the renderer source. The shell tabs, the *Import folder* control, and the library table SHALL be rendered with those components. The Tag screen's *Play/Stop*, suggestion radios, *Other…* list, text fields, *Save*, and *Next file* SHALL be rendered with those components. The main process, preload, and worker SHALL NOT import React.
+The repository SHALL install shadcn for the renderer and SHALL include its button, tabs, table, input, label, radio-group, select, and checkbox components under the renderer source. The shell tabs, the *Import folder* control, and the library table SHALL be rendered with those components. The Tag screen's *Play/Stop*, suggestion radios, *Other…* list, text fields, *Rename to UCS filename* checkbox, *Save*, and *Next file* SHALL be rendered with those components. The main process, preload, and worker SHALL NOT import React.
 
 #### Scenario: Shared components exist in the renderer
 
 - **WHEN** a developer lists the renderer component directory after install
-- **THEN** the shadcn button, tabs, table, input, label, radio-group, and select components are present
+- **THEN** the shadcn button, tabs, table, input, label, radio-group, select, and checkbox components are present
 
 #### Scenario: Import and the file table are on Library only
 
@@ -95,3 +93,4 @@ The Library view SHALL show an analysis failure on the status line. That message
 
 - **WHEN** the status line already reports how many files were stored and analysis then fails
 - **THEN** the status line still reports how many files were stored and includes the analysis failure
+

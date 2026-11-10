@@ -85,7 +85,14 @@ const api: SonoarchiveBridge = {
     return result
   },
   saveLabel: async (input) => {
-    await ipcRenderer.invoke(ipcChannels.saveLabel, input)
+    const result: unknown = await ipcRenderer.invoke(
+      ipcChannels.saveLabel,
+      input,
+    )
+    if (typeof result !== 'string' || result.length === 0) {
+      throw new Error('Unexpected save response')
+    }
+    return result
   },
   mediaUrl: async (filePath) => {
     const result: unknown = await ipcRenderer.invoke(

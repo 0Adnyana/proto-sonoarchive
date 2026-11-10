@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
   AnalysisProgress,
   LibraryFile,
-  SaveLabelInput,
+  SaveWavInput,
   UcsEntry,
 } from '../shared/ipc'
 import { App } from './app'
@@ -146,7 +146,7 @@ describe('tag screen', () => {
   })
 
   it('keeps Save disabled until a CatID and a non-blank FXName are set', async () => {
-    const saved: SaveLabelInput[] = []
+    const saved: SaveWavInput[] = []
     let files = [tone, door, quiet]
     let publish: (rows: LibraryFile[]) => void = () => {}
     render(
@@ -176,6 +176,7 @@ describe('tag screen', () => {
                 : file,
             )
             publish(files)
+            return input.path
           },
         })}
       />,
@@ -248,6 +249,7 @@ describe('tag screen', () => {
           creatorId: '',
           sourceId: '',
           rank: '2',
+          rename: false,
         },
       ])
     })
@@ -383,6 +385,7 @@ describe('tag screen', () => {
           },
           saveLabel: async (input) => {
             saved.push(input.path)
+            return input.path
           },
         })}
       />,
@@ -440,6 +443,167 @@ describe('tag screen', () => {
     )
     expect(screen.queryByText('Saved tone.wav as AIRBrst')).toBeNull()
   })
+
+  it('starts unticked and previews the filename as FXName changes', async () => {
+    render(<App bridge={bridge({ listLibrary: async () => [tone, door] })} />)
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
+    const checkbox = () =>
+      screen.getByRole('checkbox', { name: 'Rename to UCS filename' })
+    expect(checkbox().getAttribute('aria-checked')).toBe('false')
+
+    fireEvent.click(
+      await screen.findByRole('radio', { name: 'AIRBrst AIR › Burst 0.250' }),
+    )
+    fireEvent.change(screen.getByRole('textbox', { name: 'FXName' }), {
+      target: { value: 'Creak' },
+    })
+    expect(screen.getByText('AIRBrst_Creak__.wav')).toBeTruthy()
+    fireEvent.change(screen.getByRole('textbox', { name: 'FXName' }), {
+      target: { value: 'Slam' },
+    })
+    expect(screen.queryByText('AIRBrst_Creak__.wav')).toBeNull()
+    expect(screen.getByText('AIRBrst_Slam__.wav')).toBeTruthy()
+
+    selectTab('Library')
+    fireEvent.click(screen.getByRole('cell', { name: 'door.wav' }))
+    expect(checkbox().getAttribute('aria-checked')).toBe('false')
+    expect(screen.getByText('DOORWood_Creak_Ada_Field.wav')).toBeTruthy()
+  })
+
+  it('stays on the renamed file, lists it once, and plays the new path', async () => {
+    const play = vi.fn(() => Promise.resolve())
+    stubMedia({
+      play,
+      pause: vi.fn(),
+      getTime: () => 0,
+      setTime: () => {},
+    })
+    const mediaPaths: string[] = []
+    const nextName = 'AIRBrst_Door slam_Ada_Field.wav'
+    const nextPath = `/library/${nextName}`
+    let files = [tone]
+    let publish: (rows: LibraryFile[]) => void = () => {}
+    const saved: SaveWavInput[] = []
+    render(
+      <App
+        bridge={bridge({
+          listLibrary: async () => files,
+          onLibraryChanged: (listener) => {
+            publish = listener
+            return () => {}
+          },
+          saveLabel: async (input) => {
+            saved.push(input)
+            files = [
+              {
+                ...tone,
+                path: nextPath,
+                name: nextName,
+                status: 'tagged',
+                catId: input.catId,
+                label: {
+                  catId: input.catId,
+                  fxName: input.fxName.trim(),
+                  creatorId: input.creatorId.trim(),
+                  sourceId: input.sourceId.trim(),
+                  rank: input.rank,
+                },
+              },
+            ]
+            publish(files)
+            return nextPath
+          },
+          mediaUrl: async (path) => {
+            mediaPaths.push(path)
+            return `sonoarchive://media/${encodeURIComponent(path)}`
+          },
+        })}
+      />,
+    )
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
+    fireEvent.click(
+      await screen.findByRole('radio', { name: 'AIRBrst AIR › Burst 0.250' }),
+    )
+    fireEvent.change(screen.getByRole('textbox', { name: 'FXName' }), {
+      target: { value: 'Door slam' },
+    })
+    fireEvent.change(screen.getByRole('textbox', { name: 'CreatorID' }), {
+      target: { value: 'Ada' },
+    })
+    fireEvent.change(screen.getByRole('textbox', { name: 'SourceID' }), {
+      target: { value: 'Field' },
+    })
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Rename to UCS filename' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    const tag = screen.getByRole('tabpanel', { name: 'Tag' })
+    await waitFor(() => {
+      expect(tag.textContent).toContain(nextName)
+    })
+    expect(tag.textContent).not.toContain('tone.wav')
+    expect(saved).toEqual([
+      expect.objectContaining({
+        path: '/library/tone.wav',
+        rename: true,
+        catId: 'AIRBrst',
+        fxName: 'Door slam',
+      }),
+    ])
+    expect(
+      screen
+        .getByRole('checkbox', { name: 'Rename to UCS filename' })
+        .getAttribute('aria-checked'),
+    ).toBe('false')
+
+    selectTab('Library')
+    expect(screen.getAllByRole('cell', { name: nextName })).toHaveLength(1)
+    expect(screen.queryByRole('cell', { name: 'tone.wav' })).toBeNull()
+    expect(cellText()).toEqual([nextName, 'wav', '1.5', 'tagged', 'AIRBrst'])
+
+    fireEvent.click(screen.getByRole('cell', { name: nextName }))
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }))
+    await waitFor(() => {
+      expect(mediaPaths).toEqual([nextPath])
+    })
+    expect(play).toHaveBeenCalledOnce()
+  })
+
+  it('shows a collision on the original file', async () => {
+    render(
+      <App
+        bridge={bridge({
+          listLibrary: async () => [tone],
+          saveLabel: async () => {
+            throw new Error(
+              'A file named AIRBrst_Door slam__.wav already exists.',
+            )
+          },
+        })}
+      />,
+    )
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
+    fireEvent.click(
+      await screen.findByRole('radio', { name: 'AIRBrst AIR › Burst 0.250' }),
+    )
+    fireEvent.change(screen.getByRole('textbox', { name: 'FXName' }), {
+      target: { value: 'Door slam' },
+    })
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Rename to UCS filename' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    const panel = screen.getByRole('tabpanel', { name: 'Tag' })
+    await waitFor(() => {
+      expect(panel.textContent).toContain(
+        'A file named AIRBrst_Door slam__.wav already exists.',
+      )
+    })
+    expect(panel.textContent).toContain('tone.wav')
+    expect(screen.queryByText('Saved tone.wav as AIRBrst')).toBeNull()
+  })
 })
 
 function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
@@ -450,7 +614,7 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
     onLibraryNotice: () => () => {},
     onAnalysisProgress: () => () => {},
     listUcs: async () => catalog,
-    saveLabel: async () => {},
+    saveLabel: async () => '',
     mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,
     resetLibrary: async () => {},
     ...overrides,

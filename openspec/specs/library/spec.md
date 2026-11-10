@@ -3,9 +3,7 @@
 ## Purpose
 
 TBD
-
 ## Requirements
-
 ### Requirement: Library lists imported files
 
 The Library screen SHALL show a table with one row per stored file and the columns file name, format, duration, status, and CatID. Duration SHALL be shown in seconds. An untagged file SHALL show status *untagged* and its stored top-1 CatID, or an empty CatID when it has no suggestions. A tagged file SHALL show status *tagged* and the CatID stored on its label. Search SHALL show no imported file name. Tag SHALL show an imported file's name only after that file is opened.
@@ -71,3 +69,18 @@ The database SHALL contain the 753 UCS v8.2.1 rows from `fixtures/UCS v8.2.1 Ful
 
 - **WHEN** the app opens a second time with the catalog already stored
 - **THEN** the `ucs` table still contains 753 rows
+
+### Requirement: A renamed file is listed under its new name
+
+After *Save* renames a file, the library SHALL contain one row for that file. That row SHALL use the new path and the new file name, SHALL keep the file's suggestions and embedding, and SHALL show status *tagged* with the saved CatID. The previous path SHALL NOT be listed. Quitting and opening the app SHALL list the new file name.
+
+#### Scenario: Library shows the new name
+
+- **WHEN** *Save* has renamed a file to its UCS filename
+- **THEN** the library table shows that new file name once, with status *tagged* and the saved CatID, and does not show the previous file name
+
+#### Scenario: Restart lists the new name
+
+- **WHEN** the user quits after a file was renamed and then opens the app again
+- **THEN** that file is listed with the new file name, status *tagged*, and the same CatID
+

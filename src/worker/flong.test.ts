@@ -275,6 +275,7 @@ describe('F-long match', () => {
       creatorId: 'Ada',
       sourceId: 'Field',
       rank: '1',
+      rename: false,
     })
     expect(readStoredFile(db, donePath)?.status).toBe('tagged')
     expect(waitingStarted).toBe(true)

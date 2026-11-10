@@ -3,9 +3,7 @@
 ## Purpose
 
 TBD
-
 ## Requirements
-
 ### Requirement: A Library row opens on Tag
 
 Selecting a Library row SHALL open that file on the Tag screen and SHALL show its file name. Until a row is selected, Tag SHALL show no imported file name. Search SHALL show no imported file name.
@@ -132,3 +130,79 @@ Opening a file that already has a label SHALL select its CatID and fill FXName, 
 
 - **WHEN** the user opens a file whose saved rank is *manual*
 - **THEN** *Other…* shows the saved CatID and the three fields show the saved values
+
+### Requirement: Rename to UCS filename starts unticked
+
+When a file is open, Tag SHALL show a checkbox named *Rename to UCS filename*. The checkbox SHALL be unticked when that file is opened. Opening a file that already has a label SHALL also leave the checkbox unticked.
+
+#### Scenario: A newly opened file is unticked
+
+- **WHEN** the user opens a file on Tag
+- **THEN** *Rename to UCS filename* is shown and is unticked
+
+#### Scenario: A tagged file opens unticked
+
+- **WHEN** the user opens a file that already has a label
+- **THEN** *Rename to UCS filename* is unticked
+
+### Requirement: The preview is the UCS filename
+
+While a file is open, Tag SHALL show the preview basename `CatID_FXName_CreatorID_SourceID` plus that file's current extension. CatID, FXName, CreatorID, and SourceID in that basename SHALL be the current field values with surrounding whitespace removed. An empty CreatorID or SourceID SHALL still occupy its place, so both empty values end the basename with `__` before the extension. The preview SHALL change when the selected CatID or any of the three text fields changes. The extension SHALL be the extension on the stored path, including its current case.
+
+#### Scenario: The preview matches the fields
+
+- **WHEN** a `.wav` file is open, a CatID is selected, and FXName, CreatorID, and SourceID are filled
+- **THEN** the preview is `CatID_FXName_CreatorID_SourceID.wav` using those current values
+
+#### Scenario: Empty ids stay in the name
+
+- **WHEN** a CatID and an FXName are set and CreatorID and SourceID are empty
+- **THEN** the preview ends with `__` before the extension
+
+#### Scenario: Editing a field updates the preview
+
+- **WHEN** the preview is showing and the user changes FXName
+- **THEN** the preview uses the new FXName and the same CatID, CreatorID, SourceID, and extension
+
+### Requirement: A ticked Save renames after the metadata write
+
+When *Rename to UCS filename* is ticked and the previewed path is different from the open file's path, *Save* SHALL write the WAV metadata first. After that write succeeds, *Save* SHALL rename the file in its current directory to the previewed basename, then store the `labels` row and the file row at the new path. The file's suggestions and embedding SHALL remain on that row. Tag SHALL stay on the renamed file and SHALL show its new name. Playback SHALL use the new path. The renamed file SHALL contain the six saved metadata fields.
+
+#### Scenario: Save renames to the preview
+
+- **WHEN** the user ticks *Rename to UCS filename*, sets a CatID and the three text fields, and activates *Save*
+- **THEN** the file on disk has the previewed name, the library row uses that name and path, and the previous filename is gone
+
+#### Scenario: The renamed file keeps its tags and plays
+
+- **WHEN** a file has been renamed by *Save*
+- **THEN** reading the file back shows the saved CatID, Category, SubCategory, FXName, CreatorID, and SourceID, and *Play* uses the new path
+
+#### Scenario: Tag stays on the renamed file
+
+- **WHEN** *Save* renames the open file
+- **THEN** Tag shows the new file name
+
+### Requirement: An unticked Save keeps the filename
+
+When *Rename to UCS filename* is unticked, *Save* SHALL write the WAV metadata and the `labels` row and SHALL leave the file's name and path unchanged.
+
+#### Scenario: The filename survives an unticked Save
+
+- **WHEN** the user leaves *Rename to UCS filename* unticked and activates *Save*
+- **THEN** the metadata and the label are stored and the filename is the same as before *Save*
+
+### Requirement: A taken UCS name is not used
+
+When *Rename to UCS filename* is ticked and a different file already has the previewed name, *Save* SHALL write the WAV metadata and the `labels` row on the original path, SHALL NOT rename the file, and Tag SHALL show an error. The original filename SHALL remain. When the previewed path is the open file's current path, *Save* SHALL write the metadata and the label, SHALL NOT show that error, and SHALL leave the filename as it is.
+
+#### Scenario: An existing file blocks the rename
+
+- **WHEN** the user ticks *Rename to UCS filename* and the previewed name is already another file in the same directory
+- **THEN** Tag shows an error, the original filename remains, and the original file has the saved metadata and a label
+
+#### Scenario: The current name is not a collision
+
+- **WHEN** the user ticks *Rename to UCS filename* and the previewed path is the open file's current path
+- **THEN** *Save* succeeds, no collision error is shown, and the filename is unchanged
+

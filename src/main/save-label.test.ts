@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import {
   chmodSync,
+  existsSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -32,14 +33,17 @@ const suggestions: Suggestion[] = [
 describe('save tagged wav', () => {
   it('writes rank 2 and a manual rank after the file write succeeds', () => {
     const { db, wav } = libraryWithWav('tone.wav')
-    saveTaggedWav(db, {
+    const savedPath = saveTaggedWav(db, {
       path: wav,
       catId: 'AIRBrst',
       fxName: '  Door slam ',
       creatorId: ' Ada ',
       sourceId: ' Field ',
       rank: '2',
+      rename: false,
     })
+    expect(savedPath).toBe(wav)
+    expect(existsSync(wav)).toBe(true)
     expect(readLabels(db)).toEqual([
       expect.objectContaining({
         path: wav,
@@ -67,6 +71,7 @@ describe('save tagged wav', () => {
       creatorId: '',
       sourceId: '',
       rank: 'manual',
+      rename: false,
     })
     expect(readLabels(db)).toEqual([
       expect.objectContaining({
@@ -102,6 +107,7 @@ describe('save tagged wav', () => {
       creatorId: 'Ada',
       sourceId: 'Field',
       rank: '2',
+      rename: false,
     })
     const row = readLabels(db)
     const bytes = readFileSync(wav)
@@ -115,6 +121,7 @@ describe('save tagged wav', () => {
           creatorId: '',
           sourceId: '',
           rank: 'manual',
+          rename: false,
         }),
       ).toThrow(/left unchanged/)
     } finally {
@@ -140,6 +147,7 @@ describe('save tagged wav', () => {
         creatorId: 'Ada',
         sourceId: 'Field',
         rank: '2',
+        rename: false,
       }),
     ).toThrow(/FXName is empty/)
     expect(() =>
@@ -150,6 +158,7 @@ describe('save tagged wav', () => {
         creatorId: '',
         sourceId: '',
         rank: 'manual',
+        rename: false,
       }),
     ).toThrow(/Unknown CatID/)
     expect(() =>
@@ -160,11 +169,226 @@ describe('save tagged wav', () => {
         creatorId: '',
         sourceId: '',
         rank: '2',
+        rename: false,
       }),
     ).toThrow(/does not match/)
     expect(readLabels(db)).toEqual([])
     expect(readStoredFile(db, wav)?.status).toBe('untagged')
     expect(hashFile(wav)).toBe(before)
+    db.close()
+  })
+
+  it('renames one row, keeps the embedding, and reads the six fields back', () => {
+    const { db, wav, folder } = libraryWithWav('tone.wav')
+    const before = db
+      .prepare('SELECT rowid AS id FROM files WHERE path = ?')
+      .get(wav) as { id: number }
+    const embedding = readEmbedding(db, wav)
+    const destination = join(folder, 'DOORWood_Creak_JS_01.wav')
+    const savedPath = saveTaggedWav(db, {
+      path: wav,
+      catId: 'DOORWood',
+      fxName: 'Creak',
+      creatorId: 'JS',
+      sourceId: '01',
+      rank: 'manual',
+      rename: true,
+    })
+    expect(savedPath).toBe(destination)
+    expect(existsSync(wav)).toBe(false)
+    expect(existsSync(destination)).toBe(true)
+    const after = db
+      .prepare('SELECT rowid AS id FROM files WHERE path = ?')
+      .get(destination) as { id: number }
+    expect(after.id).toBe(before.id)
+    expect(
+      readEmbedding(db, destination)?.equals(embedding ?? Buffer.alloc(0)),
+    ).toBe(true)
+    expect(readEmbedding(db, wav)).toBeUndefined()
+    expect(suggestionCount(db, wav)).toBe(0)
+    expect(suggestionCount(db, destination)).toBe(5)
+    expect(listFiles(db)).toEqual([
+      expect.objectContaining({
+        path: destination,
+        name: 'DOORWood_Creak_JS_01.wav',
+        status: 'tagged',
+        catId: 'DOORWood',
+      }),
+    ])
+    expect(readLabels(db)).toEqual([
+      expect.objectContaining({
+        path: destination,
+        catId: 'DOORWood',
+        fxName: 'Creak',
+        creatorId: 'JS',
+        sourceId: '01',
+        rank: 'manual',
+      }),
+    ])
+    expect(inspectWav(readFileSync(destination)).fields).toEqual({
+      CatID: 'DOORWood',
+      Category: 'DOORS',
+      SubCategory: 'Wood',
+      FXName: 'Creak',
+      CreatorID: 'JS',
+      SourceID: '01',
+    })
+    db.close()
+    const reopened = openLibrary(join(folder, 'library.db'))
+    expect(listFiles(reopened)).toEqual([
+      expect.objectContaining({
+        path: destination,
+        name: 'DOORWood_Creak_JS_01.wav',
+        status: 'tagged',
+        catId: 'DOORWood',
+      }),
+    ])
+    reopened.close()
+  })
+
+  it('keeps the original path when the previewed name is already taken', () => {
+    const { db, wav, folder } = libraryWithWav('tone.wav')
+    const onDisk = join(folder, 'DOORWood_Creak__.wav')
+    writeFileSync(onDisk, Buffer.from('other-bytes'))
+    expect(() =>
+      saveTaggedWav(db, {
+        path: wav,
+        catId: 'DOORWood',
+        fxName: 'Creak',
+        creatorId: '',
+        sourceId: '',
+        rank: 'manual',
+        rename: true,
+      }),
+    ).toThrow('A file named DOORWood_Creak__.wav already exists.')
+    expect(existsSync(wav)).toBe(true)
+    expect(readFileSync(onDisk).equals(Buffer.from('other-bytes'))).toBe(true)
+    expect(readStoredFile(db, wav)?.name).toBe('tone.wav')
+    expect(readLabels(db)).toEqual([
+      expect.objectContaining({
+        path: wav,
+        catId: 'DOORWood',
+        fxName: 'Creak',
+      }),
+    ])
+    expect(inspectWav(readFileSync(wav)).fields).toMatchObject({
+      CatID: 'DOORWood',
+      FXName: 'Creak',
+      CreatorID: '',
+      SourceID: '',
+    })
+
+    const taken = join(folder, 'AIRBrst_Gust_Ada_Field.wav')
+    upsertWav(db, {
+      path: taken,
+      name: 'AIRBrst_Gust_Ada_Field.wav',
+      format: 'wav',
+      duration: 1,
+      status: 'untagged',
+      modifiedTime: 2,
+    })
+    expect(() =>
+      saveTaggedWav(db, {
+        path: wav,
+        catId: 'AIRBrst',
+        fxName: 'Gust',
+        creatorId: 'Ada',
+        sourceId: 'Field',
+        rank: '2',
+        rename: true,
+      }),
+    ).toThrow('A file named AIRBrst_Gust_Ada_Field.wav already exists.')
+    expect(existsSync(wav)).toBe(true)
+    expect(existsSync(taken)).toBe(false)
+    expect(readStoredFile(db, wav)?.name).toBe('tone.wav')
+    expect(readLabels(db)).toEqual([
+      expect.objectContaining({
+        path: wav,
+        catId: 'AIRBrst',
+        fxName: 'Gust',
+        rank: '2',
+      }),
+    ])
+    db.close()
+  })
+
+  it('saves a file that already has the previewed name without renaming', () => {
+    const name = 'DOORWood_Creak_JS_01.wav'
+    const { db, wav } = libraryWithWav(name)
+    const savedPath = saveTaggedWav(db, {
+      path: wav,
+      catId: 'DOORWood',
+      fxName: 'Creak',
+      creatorId: 'JS',
+      sourceId: '01',
+      rank: 'manual',
+      rename: true,
+    })
+    expect(savedPath).toBe(wav)
+    expect(readStoredFile(db, wav)?.name).toBe(name)
+    expect(readLabels(db)).toEqual([
+      expect.objectContaining({ path: wav, fxName: 'Creak', creatorId: 'JS' }),
+    ])
+    expect(inspectWav(readFileSync(wav)).fields.FXName).toBe('Creak')
+    db.close()
+  })
+
+  it('renames the file back when the database update fails', () => {
+    const { db, wav, folder } = libraryWithWav('tone.wav')
+    const destination = join(folder, 'DOORWood_Creak__.wav')
+    db.exec(`
+      CREATE TRIGGER fail_path_update
+      BEFORE UPDATE OF path ON files
+      WHEN NEW.path <> OLD.path
+      BEGIN
+        SELECT RAISE(ABORT, 'forced path update failure');
+      END;
+    `)
+    expect(() =>
+      saveTaggedWav(db, {
+        path: wav,
+        catId: 'DOORWood',
+        fxName: 'Creak',
+        creatorId: '',
+        sourceId: '',
+        rank: 'manual',
+        rename: true,
+      }),
+    ).toThrow(/forced path update failure/)
+    expect(existsSync(wav)).toBe(true)
+    expect(existsSync(destination)).toBe(false)
+    expect(readStoredFile(db, wav)?.name).toBe('tone.wav')
+    expect(readLabels(db)).toEqual([
+      expect.objectContaining({
+        path: wav,
+        catId: 'DOORWood',
+        fxName: 'Creak',
+      }),
+    ])
+    expect(inspectWav(readFileSync(wav)).fields.CatID).toBe('DOORWood')
+    db.close()
+  })
+
+  it('keeps the original path when the basename is rejected', () => {
+    const { db, wav, folder } = libraryWithWav('tone.wav')
+    expect(() =>
+      saveTaggedWav(db, {
+        path: wav,
+        catId: 'DOORWood',
+        fxName: 'bad/name',
+        creatorId: '',
+        sourceId: '',
+        rank: 'manual',
+        rename: true,
+      }),
+    ).toThrow('Could not rename the file to DOORWood_bad/name__.wav.')
+    expect(existsSync(wav)).toBe(true)
+    expect(readdirSync(folder)).not.toContain('bad')
+    expect(readStoredFile(db, wav)?.name).toBe('tone.wav')
+    expect(readLabels(db)).toEqual([
+      expect.objectContaining({ path: wav, fxName: 'bad/name' }),
+    ])
+    expect(inspectWav(readFileSync(wav)).fields.FXName).toBe('bad/name')
     db.close()
   })
 })
@@ -226,6 +450,29 @@ function readLabels(
        ORDER BY path`,
     )
     .all() as Array<LibraryLabel & { path: string; savedAt: string }>
+}
+
+function readEmbedding(
+  db: LibraryDatabase,
+  filePath: string,
+): Buffer | undefined {
+  const row = db
+    .prepare(
+      `SELECT embeddings.embedding AS embedding
+       FROM files
+       JOIN embeddings ON embeddings.rowid = files.rowid
+       WHERE files.path = ?`,
+    )
+    .get(filePath) as { embedding: Uint8Array } | undefined
+  if (!row) return undefined
+  return Buffer.from(row.embedding)
+}
+
+function suggestionCount(db: LibraryDatabase, filePath: string): number {
+  const row = db
+    .prepare('SELECT COUNT(*) AS count FROM suggestions WHERE path = ?')
+    .get(filePath) as { count: number }
+  return row.count
 }
 
 function sampleEmbedding(): Float32Array {

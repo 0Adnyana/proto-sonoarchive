@@ -92,6 +92,10 @@ export type SaveLabelInput = {
   rank: LabelRank
 }
 
+export type SaveWavInput = SaveLabelInput & {
+  rename: boolean
+}
+
 export type ImportFolderResult = {
   stored: number
   failed: string[]
@@ -112,7 +116,7 @@ export type SonoarchiveBridge = {
     listener: (progress: AnalysisProgress) => void,
   ) => () => void
   listUcs: () => Promise<UcsEntry[]>
-  saveLabel: (input: SaveLabelInput) => Promise<void>
+  saveLabel: (input: SaveWavInput) => Promise<string>
   mediaUrl: (path: string) => Promise<string>
   resetLibrary: () => Promise<void>
 }
@@ -276,6 +280,12 @@ export function isSaveLabelInput(value: unknown): value is SaveLabelInput {
     typeof value.sourceId === 'string' &&
     isLabelRank(value.rank)
   )
+}
+
+export function isSaveWavInput(value: unknown): value is SaveWavInput {
+  if (!isSaveLabelInput(value)) return false
+  const rename = (value as { rename?: unknown }).rename
+  return typeof rename === 'boolean'
 }
 
 export function isMediaUrl(value: unknown): value is string {

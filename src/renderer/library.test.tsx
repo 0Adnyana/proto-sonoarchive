@@ -378,7 +378,7 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
     onLibraryNotice: () => () => {},
     onAnalysisProgress: () => () => {},
     listUcs: async () => [],
-    saveLabel: async () => {},
+    saveLabel: async () => '',
     mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,
     resetLibrary: async () => {},
     ...overrides,

@@ -17,7 +17,7 @@ import {
   type ImportFolderResult,
   ipcChannels,
   isPingSuccess,
-  isSaveLabelInput,
+  isSaveWavInput,
   type LibraryFile,
   type PingSuccess,
   readAnalyseMessage,
@@ -131,11 +131,15 @@ function registerLibraryHandlers(): void {
   })
 
   ipcMain.handle(ipcChannels.saveLabel, (_event, payload: unknown) => {
-    if (!isSaveLabelInput(payload)) {
+    if (!isSaveWavInput(payload)) {
       throw new Error('Could not save the label.')
     }
-    saveTaggedWav(requireLibrary(), payload)
-    broadcastLibrary()
+    const db = requireLibrary()
+    try {
+      return saveTaggedWav(db, payload)
+    } finally {
+      broadcastLibrary()
+    }
   })
 
   ipcMain.handle(ipcChannels.mediaUrl, (_event, filePath: unknown) => {

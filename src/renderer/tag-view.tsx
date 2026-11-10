@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -17,6 +18,7 @@ import {
   type LibraryFile,
   type UcsEntry,
 } from '../shared/ipc'
+import { ucsFilename } from '../shared/ucs-filename'
 import { errorText, type LibraryBridge } from './library'
 import { catalogOption, nextUntaggedPath, suggestionLabel } from './tag'
 
@@ -82,6 +84,7 @@ function TagEditor({
   const [fxName, setFxName] = useState(file.label?.fxName ?? '')
   const [creatorId, setCreatorId] = useState(file.label?.creatorId ?? '')
   const [sourceId, setSourceId] = useState(file.label?.sourceId ?? '')
+  const [rename, setRename] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [saveStatus, setSaveStatus] = useState('')
   const catalogById = new Map(catalog.map((entry) => [entry.catId, entry]))
@@ -97,6 +100,12 @@ function TagEditor({
       : null
   const saveEnabled =
     selectedCatId !== null && selectedRank !== null && fxName.trim().length > 0
+  const preview = ucsFilename(file.path, {
+    catId: selectedCatId ?? '',
+    fxName,
+    creatorId,
+    sourceId,
+  })
 
   useEffect(() => {
     const audio = audioRef.current
@@ -128,16 +137,18 @@ function TagEditor({
   async function onSave(): Promise<void> {
     if (!selectedCatId || !selectedRank) return
     try {
-      await bridge.saveLabel({
+      const savedPath = await bridge.saveLabel({
         path: file.path,
         catId: selectedCatId,
         fxName,
         creatorId,
         sourceId,
         rank: selectedRank,
+        rename,
       })
       setSaveStatus('')
       toast.success(`Saved ${file.name} as ${selectedCatId}`)
+      onOpen(savedPath)
     } catch (error: unknown) {
       setSaveStatus(errorText(error))
     }
@@ -230,6 +241,15 @@ function TagEditor({
           onChange={(event) => setSourceId(event.target.value)}
         />
       </div>
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="rename-ucs"
+          checked={rename}
+          onCheckedChange={(checked) => setRename(checked === true)}
+        />
+        <Label htmlFor="rename-ucs">Rename to UCS filename</Label>
+      </div>
+      <p className="text-sm text-muted-foreground">{preview}</p>
       <div className="flex gap-2">
         <Button
           type="button"

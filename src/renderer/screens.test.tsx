@@ -20,7 +20,7 @@ const idleBridge: LibraryBridge = {
   onLibraryNotice: () => () => {},
   onAnalysisProgress: () => () => {},
   listUcs: async () => [],
-  saveLabel: async () => {},
+  saveLabel: async () => '',
   mediaUrl: async (path) => `sonoarchive://media/${encodeURIComponent(path)}`,
   resetLibrary: async () => {},
 }
