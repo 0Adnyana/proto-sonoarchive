@@ -485,18 +485,49 @@ export function searchText(db: LibraryDatabase, query: string): SearchHit[] {
       `SELECT
          files.path AS path,
          files.name AS name,
-         labels.CatID AS catId,
-         labels.FXName AS fxName
-       FROM labels
-       JOIN files ON files.path = labels.path
-       JOIN ucs ON ucs.CatID = labels.CatID
-       WHERE labels.CatID LIKE ? ESCAPE '\\'
-          OR ucs.Category LIKE ? ESCAPE '\\'
-          OR ucs.SubCategory LIKE ? ESCAPE '\\'
-          OR labels.FXName LIKE ? ESCAPE '\\'
-       ORDER BY files.name COLLATE NOCASE, files.path`,
+         COALESCE(labels.CatID, suggestions.CatID, '') AS catId,
+         COALESCE(labels.FXName, '') AS fxName
+       FROM files
+       LEFT JOIN labels ON labels.path = files.path
+       LEFT JOIN suggestions
+         ON suggestions.path = files.path AND suggestions.rank = 1
+       LEFT JOIN ucs AS label_ucs ON label_ucs.CatID = labels.CatID
+       LEFT JOIN ucs AS suggestion_ucs ON suggestion_ucs.CatID = suggestions.CatID
+       WHERE files.name LIKE ? ESCAPE '\\'
+          OR (
+            labels.path IS NOT NULL
+            AND (
+              labels.CatID LIKE ? ESCAPE '\\'
+              OR label_ucs.Category LIKE ? ESCAPE '\\'
+              OR label_ucs.SubCategory LIKE ? ESCAPE '\\'
+              OR labels.FXName LIKE ? ESCAPE '\\'
+            )
+          )
+          OR (
+            labels.path IS NULL
+            AND suggestions.CatID IS NOT NULL
+            AND (
+              suggestions.CatID LIKE ? ESCAPE '\\'
+              OR suggestion_ucs.Category LIKE ? ESCAPE '\\'
+              OR suggestion_ucs.SubCategory LIKE ? ESCAPE '\\'
+            )
+          )
+       ORDER BY
+         CASE WHEN files.name LIKE ? ESCAPE '\\' THEN 0 ELSE 1 END,
+         files.name COLLATE NOCASE,
+         files.path`,
     )
-    .all(pattern, pattern, pattern, pattern) as Array<{
+    .all(
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+    ) as Array<{
     path: string
     name: string
     catId: string

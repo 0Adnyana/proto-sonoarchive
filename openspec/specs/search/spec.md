@@ -22,22 +22,42 @@ The Search screen SHALL show a text input, a *Search* button, a *Find similar to
 
 ### Requirement: Text search matches tagged fields
 
-*Search* SHALL return each tagged file whose CatID, Category, SubCategory, or FXName contains the query as a case-insensitive substring. Category and SubCategory SHALL be the UCS values for that label's CatID. An untagged file SHALL NOT be returned. The characters `%`, `_`, and `\` in the query SHALL match themselves. Results SHALL be ordered by file name. Each row SHALL show that file's name, its label CatID, and its FXName, and the Similarity cell SHALL be empty. An empty query, including a query of only spaces, SHALL return no rows.
+*Search* SHALL return each stored file whose file name contains the query as a case-insensitive substring. *Search* SHALL also return each tagged file whose CatID, Category, SubCategory, or FXName contains the query as a case-insensitive substring. Category and SubCategory SHALL be the UCS values for that label's CatID. *Search* SHALL also return each untagged file whose rank-1 suggestion CatID, or the UCS Category or SubCategory for that CatID, contains the query as a case-insensitive substring. A tagged file SHALL NOT be returned because a suggestion contains the query. The characters `%`, `_`, and `\` in the query SHALL match themselves. A row whose file name contains the query SHALL be listed before a row that matches only on CatID, Category, SubCategory, or FXName. Inside each of those groups, results SHALL be ordered by file name, then path. Each tagged row SHALL show that file's name, its label CatID, and its FXName. Each untagged row SHALL show that file's name, its rank-1 suggestion CatID or an empty CatID when it has no rank-1 suggestion, and an empty FXName. The Similarity cell SHALL be empty. An empty query, including a query of only spaces, SHALL return no rows.
 
 #### Scenario: A word from FXName returns that file
 
-- **WHEN** tagged files have distinct FXNames and the user searches for a word that appears in one FXName and in no other tagged field
+- **WHEN** tagged files have distinct FXNames and the user searches for a word that appears in one FXName and in no file name, other label field, or rank-1 suggestion field
 - **THEN** that file is the only row, with its CatID and FXName, and its Similarity cell is empty
 
-#### Scenario: A category name returns that category
+#### Scenario: A category name returns tagged and untagged files in that category
 
-- **WHEN** the user searches for a Category name that appears in no other tagged field
-- **THEN** every tagged file in that category is returned and no other file is returned
+- **WHEN** the user searches for a Category name that appears in no file name
+- **THEN** every tagged file whose label CatID is in that category is returned, every untagged file whose rank-1 CatID is in that category is returned, and no other file is returned
 
-#### Scenario: An untagged file is left out
+#### Scenario: An untagged rank-1 CatID returns that file
 
-- **WHEN** an untagged file's top-1 CatID contains the query and no tagged file matches
+- **WHEN** an untagged file's rank-1 CatID contains the query and no other searched field matches
+- **THEN** that file is the only row, with that CatID, an empty FXName, and an empty Similarity cell
+
+#### Scenario: A file name returns that file
+
+- **WHEN** the query appears in one stored file's name and in no other file's name, label field, or rank-1 suggestion field
+- **THEN** that file is the only row, with its label CatID and FXName when it is tagged, its rank-1 CatID and an empty FXName when it is untagged, or an empty CatID and an empty FXName when it has no rank-1 suggestion, and its Similarity cell is empty
+
+#### Scenario: A file-name match is listed first
+
+- **WHEN** one file's name contains the query and another file matches only on a label field or a rank-1 suggestion field
+- **THEN** the file whose name contains the query is the first row
+
+#### Scenario: A lower-rank suggestion is left out
+
+- **WHEN** the query appears in an untagged file's rank 2 CatID and in no file name, rank-1 suggestion field, or label field
 - **THEN** the table shows no file name
+
+#### Scenario: Tagged and untagged matches share one list
+
+- **WHEN** one tagged file and one untagged file both match on the same kind of field and the untagged file's name sorts first
+- **THEN** the untagged file is the first row and the tagged file is the second row
 
 #### Scenario: An empty query returns nothing
 

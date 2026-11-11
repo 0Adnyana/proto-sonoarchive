@@ -1,6 +1,6 @@
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { Suggestion } from '../shared/ipc'
@@ -23,7 +23,7 @@ const embeddingsPath = fileURLToPath(
 )
 
 describe('search', () => {
-  it('matches one FXName, one category, and leaves out untagged and empty queries', () => {
+  it('matches one FXName, one category, an untagged rank-1 CatID, and leaves out empty queries', () => {
     const { db, paths } = openTaggedLibrary()
     try {
       expect(searchText(db, 'creak')).toEqual([
@@ -36,7 +36,9 @@ describe('search', () => {
         hit(paths.alder, 'alder.wav', 'DOORWood', 'Wood creak'),
         hit(paths.beech, 'beech.wav', 'DOORWood', 'Panel close'),
       ])
-      expect(searchText(db, 'WATRDrip')).toEqual([])
+      expect(searchText(db, 'WATRDrip')).toEqual([
+        hit(paths.drip, 'drip.wav', 'WATRDrip', ''),
+      ])
       expect(searchText(db, '')).toEqual([])
       expect(searchText(db, '   ')).toEqual([])
       expect(searchText(db, String.raw`a\b%_c`)).toEqual([
@@ -48,6 +50,64 @@ describe('search', () => {
       expect(searchText(db, '_')).toEqual([
         hit(paths.slam, 'slam.wav', 'AIRBrst', String.raw`a\b%_c`),
       ])
+    } finally {
+      db.close()
+    }
+  })
+
+  it('matches file names and untagged rank-1 fields, and leaves out rank 2', () => {
+    const { db, paths } = openTaggedLibrary()
+    try {
+      const folder = dirname(paths.alder)
+      const acacia = join(folder, 'acacia.wav')
+      const hiss = join(folder, 'hiss.wav')
+      upsertWav(db, {
+        path: acacia,
+        name: 'acacia.wav',
+        format: 'wav',
+        duration: 1.5,
+        status: 'untagged',
+        modifiedTime: 1,
+      })
+      upsertWav(db, {
+        path: hiss,
+        name: 'hiss.wav',
+        format: 'wav',
+        duration: 1.5,
+        status: 'untagged',
+        modifiedTime: 1,
+      })
+      replaceSuggestions(db, acacia, axis(3), five('DOORWood'), 'probe')
+      replaceSuggestions(
+        db,
+        hiss,
+        axis(4),
+        [
+          { catId: 'AIRHiss', score: 0.5 },
+          { catId: 'AIRMisc', score: 0.4 },
+          { catId: 'AIRBlow', score: 0.3 },
+          { catId: 'AIRBrst', score: 0.2 },
+          { catId: 'WATRDrip', score: 0.1 },
+        ],
+        'probe',
+      )
+
+      expect(searchText(db, 'doors')).toEqual([
+        hit(acacia, 'acacia.wav', 'DOORWood', ''),
+        hit(paths.alder, 'alder.wav', 'DOORWood', 'Wood creak'),
+        hit(paths.beech, 'beech.wav', 'DOORWood', 'Panel close'),
+      ])
+      expect(searchText(db, 'bare')).toEqual([
+        hit(paths.bare, 'bare.wav', '', ''),
+      ])
+      expect(searchText(db, 'acacia')).toEqual([
+        hit(acacia, 'acacia.wav', 'DOORWood', ''),
+      ])
+      expect(searchText(db, 'p')).toEqual([
+        hit(paths.drip, 'drip.wav', 'WATRDrip', ''),
+        hit(paths.beech, 'beech.wav', 'DOORWood', 'Panel close'),
+      ])
+      expect(searchText(db, 'AIRMisc')).toEqual([])
     } finally {
       db.close()
     }
