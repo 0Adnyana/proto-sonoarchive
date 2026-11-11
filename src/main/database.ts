@@ -8,6 +8,7 @@ import {
   type LibraryFile,
   type LibraryLabel,
   type SaveLabelInput,
+  type SearchHit,
   type Suggestion,
   type UcsEntry,
 } from '../shared/ipc'
@@ -473,6 +474,92 @@ function labelFromRow(row: ListedRow): LibraryLabel | null {
     sourceId: row.sourceId,
     rank: row.labelRank,
   }
+}
+
+export function searchText(db: LibraryDatabase, query: string): SearchHit[] {
+  const trimmed = query.trim()
+  if (trimmed.length === 0) return []
+  const pattern = likeContains(trimmed)
+  const rows = db
+    .prepare(
+      `SELECT
+         files.path AS path,
+         files.name AS name,
+         labels.CatID AS catId,
+         labels.FXName AS fxName
+       FROM labels
+       JOIN files ON files.path = labels.path
+       JOIN ucs ON ucs.CatID = labels.CatID
+       WHERE labels.CatID LIKE ? ESCAPE '\\'
+          OR ucs.Category LIKE ? ESCAPE '\\'
+          OR ucs.SubCategory LIKE ? ESCAPE '\\'
+          OR labels.FXName LIKE ? ESCAPE '\\'
+       ORDER BY files.name COLLATE NOCASE, files.path`,
+    )
+    .all(pattern, pattern, pattern, pattern) as Array<{
+    path: string
+    name: string
+    catId: string
+    fxName: string
+  }>
+  return rows.map((row) => ({ ...row, similarity: null }))
+}
+
+export function findSimilar(
+  db: LibraryDatabase,
+  filePath: string,
+): SearchHit[] {
+  const stored = db
+    .prepare(
+      `SELECT embeddings.embedding AS embedding
+       FROM files
+       JOIN embeddings ON embeddings.rowid = files.rowid
+       WHERE files.path = ?`,
+    )
+    .get(filePath) as { embedding: Buffer | Uint8Array } | undefined
+  if (!stored) {
+    if (!hasStoredFile(db, filePath)) {
+      throw new Error(`No stored file for ${filePath}`)
+    }
+    throw new Error(`No stored embedding for ${filePath}`)
+  }
+  const embedding = Buffer.isBuffer(stored.embedding)
+    ? stored.embedding
+    : Buffer.from(stored.embedding)
+  const rows = db
+    .prepare(
+      `SELECT
+         files.path AS path,
+         files.name AS name,
+         COALESCE(labels.CatID, suggestions.CatID, '') AS catId,
+         COALESCE(labels.FXName, '') AS fxName,
+         vec_distance_cosine(embeddings.embedding, ?) AS distance
+       FROM embeddings
+       JOIN files ON files.rowid = embeddings.rowid
+       LEFT JOIN labels ON labels.path = files.path
+       LEFT JOIN suggestions
+         ON suggestions.path = files.path AND suggestions.rank = 1
+       WHERE files.path != ?
+       ORDER BY distance ASC, files.name ASC`,
+    )
+    .all(embedding, filePath) as Array<{
+    path: string
+    name: string
+    catId: string
+    fxName: string
+    distance: number
+  }>
+  return rows.map((row) => ({
+    path: row.path,
+    name: row.name,
+    catId: row.catId,
+    fxName: row.fxName,
+    similarity: 1 - row.distance,
+  }))
+}
+
+function likeContains(query: string): string {
+  return `%${query.replace(/[\\%_]/g, (character) => `\\${character}`)}%`
 }
 
 export function resetLibrary(db: LibraryDatabase): void {

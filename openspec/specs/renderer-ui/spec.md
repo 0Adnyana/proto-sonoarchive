@@ -20,7 +20,7 @@ The desktop renderer SHALL mount one React root into a single mount node. The HT
 
 ### Requirement: Shell and Library use the shared component set
 
-The repository SHALL install shadcn for the renderer and SHALL include its button, tabs, table, input, label, radio-group, select, and checkbox components under the renderer source. The shell tabs, the *Import folder* control, and the library table SHALL be rendered with those components. The Tag screen's *Play/Stop*, suggestion radios, *Other…* list, text fields, *Rename to UCS filename* checkbox, *Save*, and *Next file* SHALL be rendered with those components. The main process, preload, and worker SHALL NOT import React.
+The repository SHALL install shadcn for the renderer and SHALL include its button, tabs, table, input, label, radio-group, select, and checkbox components under the renderer source. The shell tabs, the *Import folder* control, and the library table SHALL be rendered with those components. The Tag screen's *Play/Stop*, suggestion radios, *Other…* list, text fields, *Rename to UCS filename* checkbox, *Save*, and *Next file* SHALL be rendered with those components. The Search screen's text input, *Search* button, *Find similar to selected file* button, and results table SHALL be rendered with those components. The main process, preload, and worker SHALL NOT import React.
 
 #### Scenario: Shared components exist in the renderer
 
@@ -34,7 +34,7 @@ The repository SHALL install shadcn for the renderer and SHALL include its butto
 
 ### Requirement: Library view follows the preload bridge
 
-The Library view SHALL load files through the preload bridge, SHALL start an import only through that bridge, and SHALL replace its rows when the bridge reports a library change. Cancelling the picker SHALL leave the rows and the status line unchanged. A bridge failure SHALL be shown on the status line. Search SHALL show no imported file name. Tag SHALL show an imported file's name only after that file is opened from Library.
+The Library view SHALL load files through the preload bridge, SHALL start an import only through that bridge, and SHALL replace its rows when the bridge reports a library change. Cancelling the picker SHALL leave the rows and the status line unchanged. A bridge failure SHALL be shown on the status line. Before a search query, Search SHALL show no imported file name. After a query, Search SHALL show a file name only for a row of the current results. Tag SHALL show an imported file's name only after that file is opened from Library or from a search result.
 
 #### Scenario: Stored files appear on start
 
@@ -53,12 +53,12 @@ The Library view SHALL load files through the preload bridge, SHALL start an imp
 
 #### Scenario: Switching tabs keeps the stored rows
 
-- **WHEN** the user opens Tag after files are listed, without selecting a row, and then returns to Library
+- **WHEN** the user opens Tag after files are listed, without selecting a row and without running a search, and then returns to Library
 - **THEN** the Library table shows the same rows and the Tag and Search panels show none of those file names
 
 #### Scenario: A selected row is named on Tag
 
-- **WHEN** the user selects a listed file
+- **WHEN** the user selects a listed file and no search results are shown
 - **THEN** Tag shows that file's name and Search shows none of the listed file names
 
 #### Scenario: A database failure is shown on the status line
@@ -93,4 +93,28 @@ The Library view SHALL show an analysis failure on the status line. That message
 
 - **WHEN** the status line already reports how many files were stored and analysis then fails
 - **THEN** the status line still reports how many files were stored and includes the analysis failure
+
+### Requirement: Library view renders analysis progress from the bridge
+
+The Library view SHALL listen for analysis progress on the preload bridge. It SHALL show the progress sentence `N / M analysed` on the Library status line. A newer progress report SHALL replace the previous progress sentence. The import result and any analysis failure SHALL remain on that status line. Progress SHALL update while the user is on Tag or Search, and SHALL be visible when the user returns to Library.
+
+#### Scenario: A progress report updates the status line
+
+- **WHEN** the bridge reports that 1 of 2 queued files has finished and the status line already says how many files were stored
+- **THEN** the status line still reports how many files were stored and includes `1 / 2 analysed`
+
+#### Scenario: The next report replaces the count
+
+- **WHEN** the status line includes `1 / 2 analysed` and the bridge then reports that 2 of 2 queued files have finished
+- **THEN** the status line includes `2 / 2 analysed` and does not include `1 / 2 analysed`
+
+#### Scenario: A failure stays beside the count
+
+- **WHEN** the status line includes a progress sentence and an analysis failure is reported
+- **THEN** the status line still includes the progress sentence and includes the analysis failure
+
+#### Scenario: The count survives a tab change
+
+- **WHEN** the bridge reports progress while Tag is open and the user returns to Library
+- **THEN** the Library status line shows the latest `N / M analysed` sentence
 

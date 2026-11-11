@@ -8,6 +8,7 @@ import {
   isLibraryNotice,
   isMediaUrl,
   isPingSuccess,
+  isSearchHitList,
   isUcsEntryList,
   type LibraryFile,
   type SonoarchiveBridge,
@@ -55,6 +56,26 @@ const api: SonoarchiveBridge = {
     const result: unknown = await ipcRenderer.invoke(ipcChannels.listLibrary)
     if (!isLibraryFileList(result)) {
       throw new Error('Unexpected library response')
+    }
+    return result
+  },
+  searchText: async (query) => {
+    const result: unknown = await ipcRenderer.invoke(
+      ipcChannels.searchText,
+      query,
+    )
+    if (!isSearchHitList(result)) {
+      throw new Error('Unexpected search response')
+    }
+    return result
+  },
+  findSimilar: async (filePath) => {
+    const result: unknown = await ipcRenderer.invoke(
+      ipcChannels.findSimilar,
+      filePath,
+    )
+    if (!isSearchHitList(result)) {
+      throw new Error('Unexpected search response')
     }
     return result
   },

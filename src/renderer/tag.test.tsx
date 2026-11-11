@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react'
 import { toast } from 'sonner'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -296,6 +297,7 @@ describe('tag screen', () => {
     expect(search.textContent).not.toContain('tone.wav')
     expect(search.textContent).not.toContain('door.wav')
     expect(search.textContent).not.toContain('quiet.wav')
+    expect(within(search).queryByRole('cell')).toBeNull()
   })
 
   it('fills the form from a saved rank and lists every catalog CatID under Other', async () => {
@@ -609,6 +611,8 @@ describe('tag screen', () => {
 function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
   return {
     listLibrary: async () => [],
+    searchText: async () => [],
+    findSimilar: async () => [],
     importFolder: async () => null,
     onLibraryChanged: () => () => {},
     onLibraryNotice: () => () => {},

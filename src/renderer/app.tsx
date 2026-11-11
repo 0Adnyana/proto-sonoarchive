@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { AnalysisProgress, LibraryFile, UcsEntry } from '../shared/ipc'
+import type {
+  AnalysisProgress,
+  LibraryFile,
+  SearchHit,
+  UcsEntry,
+} from '../shared/ipc'
 import {
   errorText,
   formatImportStatus,
@@ -9,6 +14,7 @@ import {
   type LibraryBridge,
 } from './library'
 import { LibraryView } from './library-view'
+import { SearchView } from './search-view'
 import { TagView } from './tag-view'
 
 type AppProps = {
@@ -25,7 +31,10 @@ export function App({ bridge }: AppProps) {
   const [notices, setNotices] = useState<string[]>([])
   const [progress, setProgress] = useState<AnalysisProgress | null>(null)
   const [resetting, setResetting] = useState(false)
+  const [hits, setHits] = useState<SearchHit[]>([])
+  const [searchError, setSearchError] = useState('')
   const noticesRef = useRef<string[]>([])
+  const searchRequest = useRef(0)
   const status = formatLibraryStatus(baseStatus, notices, progress)
   const openFile = files.find((file) => file.path === openPath) ?? null
 
@@ -100,6 +109,9 @@ export function App({ bridge }: AppProps) {
         setNotices([])
         setProgress(null)
         setOpenPath(null)
+        searchRequest.current += 1
+        setHits([])
+        setSearchError('')
         setBaseStatus('Database reset.')
       })
       .catch((error: unknown) => {
@@ -108,6 +120,33 @@ export function App({ bridge }: AppProps) {
       .finally(() => {
         setResetting(false)
       })
+  }
+
+  function showSearchHits(start: () => Promise<SearchHit[]>): void {
+    const id = searchRequest.current + 1
+    searchRequest.current = id
+    void Promise.resolve()
+      .then(start)
+      .then((rows) => {
+        if (searchRequest.current !== id) return
+        setHits(rows)
+        setSearchError('')
+      })
+      .catch((error: unknown) => {
+        if (searchRequest.current !== id) return
+        setHits([])
+        setSearchError(errorText(error))
+      })
+  }
+
+  function onSearchText(query: string): void {
+    showSearchHits(() => bridge.searchText(query))
+  }
+
+  function onFindSimilar(): void {
+    if (!openPath) return
+    const path = openPath
+    showSearchHits(() => bridge.findSimilar(path))
   }
 
   function onImport(): void {
@@ -152,7 +191,14 @@ export function App({ bridge }: AppProps) {
           />
         </TabsContent>
         <TabsContent value="search">
-          <h1 className="text-lg font-semibold">Search</h1>
+          <SearchView
+            openPath={openPath}
+            hits={hits}
+            message={searchError}
+            onSearchText={onSearchText}
+            onFindSimilar={onFindSimilar}
+            onOpen={openLibraryFile}
+          />
         </TabsContent>
       </Tabs>
       <Toaster />

@@ -8,7 +8,7 @@ TBD
 
 ### Requirement: Desktop shell opens three empty screens
 
-The desktop app SHALL open one window with three screens named Library, Tag, and Search. Each screen SHALL be selectable from a tab. Those screens SHALL appear after the React renderer starts. The Library screen SHALL show the import control and the files stored by this app. The Tag and Search screens SHALL show no imported files.
+The desktop app SHALL open one window with three screens named Library, Tag, and Search. Each screen SHALL be selectable from a tab. Those screens SHALL appear after the React renderer starts. The Library screen SHALL show the import control and the files stored by this app. The Tag screen SHALL show an imported file only after that file is opened. The Search screen SHALL show an imported file only as a row of the current search results, and SHALL show none before a query.
 
 #### Scenario: Renderer lists the three screens
 
@@ -27,7 +27,7 @@ The desktop app SHALL open one window with three screens named Library, Tag, and
 
 #### Scenario: Library can list files while the other screens stay empty
 
-- **WHEN** at least one file has been imported
+- **WHEN** at least one file has been imported and the user has not run a search
 - **THEN** the Library panel shows that file and the Tag and Search panels still show no imported files
 
 ### Requirement: Main process can reach the worker
@@ -46,12 +46,12 @@ The main process SHALL start the inference worker as a separate process and comp
 
 ### Requirement: Renderer cannot use Node directly
 
-The preload script SHALL be the only bridge from the renderer to the main process. The window SHALL run with context isolation enabled and Node integration disabled. The bridge SHALL expose ping, folder import, library listing, and library updates.
+The preload script SHALL be the only bridge from the renderer to the main process. The window SHALL run with context isolation enabled and Node integration disabled. The bridge SHALL expose ping, folder import, library listing, library updates, text search, and find similar.
 
 #### Scenario: Preload exposes the library bridge
 
 - **WHEN** the renderer reads the bridge on `window`
-- **THEN** it can call ping, import a folder, and list the library, and it cannot require Node modules
+- **THEN** it can call ping, import a folder, list the library, search by text, and find similar files, and it cannot require Node modules
 
 ### Requirement: Python package imports as a stub
 

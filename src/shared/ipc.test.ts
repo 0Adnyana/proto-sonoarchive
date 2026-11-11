@@ -6,6 +6,7 @@ import {
   isLibraryFileList,
   isPingRequest,
   isPingSuccess,
+  isSearchHitList,
 } from './ipc'
 
 describe('ipc', () => {
@@ -16,6 +17,8 @@ describe('ipc', () => {
   it('exports the library channels', () => {
     expect(ipcChannels.importFolder).toBe('library:import-folder')
     expect(ipcChannels.listLibrary).toBe('library:list')
+    expect(ipcChannels.searchText).toBe('library:search-text')
+    expect(ipcChannels.findSimilar).toBe('library:find-similar')
     expect(ipcChannels.libraryChanged).toBe('library:changed')
     expect(ipcChannels.libraryNotice).toBe('library:notice')
     expect(ipcChannels.analysisProgress).toBe('library:analysis-progress')
@@ -95,6 +98,39 @@ describe('ipc', () => {
     expect(isAnalysisProgress({ done: 1, total: 2 })).toBe(true)
     expect(isAnalysisProgress({ done: 3, total: 2 })).toBe(false)
     expect(isAnalysisProgress({ done: 1, total: 2, extra: true })).toBe(false)
+    expect(
+      isSearchHitList([
+        {
+          path: '/library/tone.wav',
+          name: 'tone.wav',
+          catId: 'DOORWood',
+          fxName: 'Creak',
+          similarity: null,
+        },
+      ]),
+    ).toBe(true)
+    expect(
+      isSearchHitList([
+        {
+          path: '/library/door.wav',
+          name: 'door.wav',
+          catId: 'AIRBlow',
+          fxName: '',
+          similarity: 0.5,
+        },
+      ]),
+    ).toBe(true)
+    expect(
+      isSearchHitList([
+        {
+          path: '/library/door.wav',
+          name: 'door.wav',
+          catId: '',
+          fxName: '',
+          similarity: Number.NaN,
+        },
+      ]),
+    ).toBe(false)
     expect(isImportFolderResult({ stored: 1, failed: ['bad.wav'] })).toBe(true)
     expect(isImportFolderResult({ stored: 1, failed: [1] })).toBe(false)
   })

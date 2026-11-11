@@ -15,6 +15,8 @@ const screens = ['Library', 'Tag', 'Search'] as const
 
 const idleBridge: LibraryBridge = {
   listLibrary: async () => [],
+  searchText: async () => [],
+  findSimilar: async () => [],
   importFolder: async () => null,
   onLibraryChanged: () => () => {},
   onLibraryNotice: () => () => {},

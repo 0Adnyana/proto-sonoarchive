@@ -4,6 +4,8 @@ export const ipcChannels = {
   ping: 'app:ping',
   importFolder: 'library:import-folder',
   listLibrary: 'library:list',
+  searchText: 'library:search-text',
+  findSimilar: 'library:find-similar',
   libraryChanged: 'library:changed',
   libraryNotice: 'library:notice',
   analysisProgress: 'library:analysis-progress',
@@ -77,6 +79,14 @@ export type LibraryFile = {
   label: LibraryLabel | null
 }
 
+export type SearchHit = {
+  path: string
+  name: string
+  catId: string
+  fxName: string
+  similarity: number | null
+}
+
 export type UcsEntry = {
   catId: string
   category: string
@@ -110,6 +120,8 @@ export type SonoarchiveBridge = {
   ping: () => Promise<PingSuccess>
   importFolder: () => Promise<ImportFolderResult | null>
   listLibrary: () => Promise<LibraryFile[]>
+  searchText: (query: string) => Promise<SearchHit[]>
+  findSimilar: (path: string) => Promise<SearchHit[]>
   onLibraryChanged: (listener: (files: LibraryFile[]) => void) => () => void
   onLibraryNotice: (listener: (message: string) => void) => () => void
   onAnalysisProgress: (
@@ -294,6 +306,22 @@ export function isMediaUrl(value: unknown): value is string {
 
 export function isLibraryFileList(value: unknown): value is LibraryFile[] {
   return Array.isArray(value) && value.every(isLibraryFile)
+}
+
+export function isSearchHitList(value: unknown): value is SearchHit[] {
+  return Array.isArray(value) && value.every(isSearchHit)
+}
+
+function isSearchHit(value: unknown): value is SearchHit {
+  if (!isRecord(value)) return false
+  if (!isNonEmptyString(value.path)) return false
+  if (typeof value.name !== 'string') return false
+  if (typeof value.catId !== 'string') return false
+  if (typeof value.fxName !== 'string') return false
+  if (value.similarity === null) return true
+  return (
+    typeof value.similarity === 'number' && Number.isFinite(value.similarity)
+  )
 }
 
 export function isImportFolderResult(

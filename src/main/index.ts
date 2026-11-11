@@ -38,6 +38,7 @@ import {
   storeAnalysis,
 } from './analysis'
 import {
+  findSimilar,
   hasStoredFile,
   type LibraryDatabase,
   listAnalysisCandidates,
@@ -45,6 +46,7 @@ import {
   listUcs,
   openLibrary,
   resetLibrary,
+  searchText,
 } from './database'
 import { importWavFolder } from './import-wavs'
 import { saveTaggedWav } from './save-label'
@@ -124,6 +126,20 @@ function requireLibrary(): LibraryDatabase {
 function registerLibraryHandlers(): void {
   ipcMain.handle(ipcChannels.listLibrary, (): LibraryFile[] => {
     return listFiles(requireLibrary())
+  })
+
+  ipcMain.handle(ipcChannels.searchText, (_event, query: unknown) => {
+    if (typeof query !== 'string') {
+      throw new Error('Could not search the library.')
+    }
+    return searchText(requireLibrary(), query)
+  })
+
+  ipcMain.handle(ipcChannels.findSimilar, (_event, filePath: unknown) => {
+    if (typeof filePath !== 'string' || filePath.length === 0) {
+      throw new Error('Could not search the library.')
+    }
+    return findSimilar(requireLibrary(), filePath)
   })
 
   ipcMain.handle(ipcChannels.listUcs, () => {

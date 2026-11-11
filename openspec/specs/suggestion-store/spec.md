@@ -8,7 +8,7 @@ TBD
 
 ### Requirement: Top-5 uses the probe's linear layer
 
-Each CatID score SHALL be the softmax of `weight @ embedding + bias` from the probe. The weight and bias SHALL be float32 little-endian arrays. The five highest scores SHALL be kept, highest first, and equal scores SHALL keep the earlier CatID in the probe label list. The stored probe version SHALL be the version in that probe.
+The probe's linear layer SHALL score an embedding as the softmax of `weight @ embedding + bias`. The weight and bias SHALL be float32 little-endian arrays. For a file analysed as one waveform, each stored CatID score SHALL be that softmax. For a file analysed as windows, each window SHALL be scored that way, those score vectors SHALL be averaged, and each stored CatID score SHALL be that average. The five highest stored scores SHALL be kept, highest first, and equal scores SHALL keep the earlier CatID in the probe label list. The stored probe version SHALL be the version in that probe. The stored embedding for a windowed file SHALL be the mean of the window embeddings and SHALL be one float32 vector of length 2048.
 
 #### Scenario: Rank 1 is the highest score
 
@@ -19,6 +19,21 @@ Each CatID score SHALL be the softmax of `weight @ embedding + bias` from the pr
 
 - **WHEN** two CatIDs receive the same softmax score
 - **THEN** the CatID that appears earlier in the probe label list is ranked ahead of the other
+
+#### Scenario: Window scores are averaged before the top 5
+
+- **WHEN** a file is scored as more than one window
+- **THEN** each stored score is the mean of that CatID's per-window softmax scores, and rank 1 is the CatID with the highest mean
+
+#### Scenario: An equal mean keeps the earlier label
+
+- **WHEN** two CatIDs have the same mean score across windows
+- **THEN** the CatID that appears earlier in the probe label list is ranked ahead of the other
+
+#### Scenario: The stored embedding is the window mean
+
+- **WHEN** a windowed file is written
+- **THEN** the database contains one 2048-d embedding equal to the mean of the window embeddings, and the file status is *untagged*
 
 ### Requirement: An embedding and five suggestions can be stored
 

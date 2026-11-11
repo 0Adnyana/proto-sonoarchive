@@ -6,7 +6,7 @@ TBD
 ## Requirements
 ### Requirement: Library lists imported files
 
-The Library screen SHALL show a table with one row per stored file and the columns file name, format, duration, status, and CatID. Duration SHALL be shown in seconds. An untagged file SHALL show status *untagged* and its stored top-1 CatID, or an empty CatID when it has no suggestions. A tagged file SHALL show status *tagged* and the CatID stored on its label. Search SHALL show no imported file name. Tag SHALL show an imported file's name only after that file is opened.
+The Library screen SHALL show a table with one row per stored file and the columns file name, format, duration, status, and CatID. Duration SHALL be shown in seconds. An untagged file SHALL show status *untagged* and its stored top-1 CatID, or an empty CatID when it has no suggestions. A tagged file SHALL show status *tagged* and the CatID stored on its label. Search SHALL show a file name only as a row of the current search results, and SHALL show no file name before a query. Tag SHALL show an imported file's name only after that file is opened.
 
 #### Scenario: Imported files appear as untagged
 
@@ -83,4 +83,23 @@ After *Save* renames a file, the library SHALL contain one row for that file. Th
 
 - **WHEN** the user quits after a file was renamed and then opens the app again
 - **THEN** that file is listed with the new file name, status *tagged*, and the same CatID
+
+### Requirement: Library shows analysis progress
+
+The Library screen SHALL show a progress sentence while a background analysis queue is running and after that queue has finished in the current session. The sentence SHALL read `N / M analysed`, where M is the number of files queued and N is how many of those files the queue has finished. N SHALL increase as each file finishes, including a file whose analysis failed. The sentence SHALL reach `M / M analysed` when the queue is idle. When no file has been queued, the Library SHALL NOT show a progress sentence. The import status sentence SHALL stay on the status line.
+
+#### Scenario: The count advances until every queued file is finished
+
+- **WHEN** an import queues more than one file for analysis
+- **THEN** the status line shows `N / M analysed` with N increasing until it shows `M / M analysed`
+
+#### Scenario: Import and progress share the status line
+
+- **WHEN** an import has reported how many files were stored and analysis is still running
+- **THEN** the status line still reports how many files were stored and includes the progress sentence
+
+#### Scenario: No queue leaves the progress sentence out
+
+- **WHEN** the Library is shown and no file has been queued for analysis
+- **THEN** the status line does not contain `analysed`
 

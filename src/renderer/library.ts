@@ -8,6 +8,8 @@ export type LibraryBridge = Pick<
   SonoarchiveBridge,
   | 'importFolder'
   | 'listLibrary'
+  | 'searchText'
+  | 'findSimilar'
   | 'onLibraryChanged'
   | 'onLibraryNotice'
   | 'onAnalysisProgress'

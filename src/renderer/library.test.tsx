@@ -227,11 +227,18 @@ describe('library screen', () => {
     expect(screen.queryByRole('table')).toBeNull()
 
     selectTab('Search')
+    const search = screen.getByRole('tabpanel', { name: 'Search' })
+    expect(search.textContent).not.toContain('tone.wav')
     expect(
-      screen.getByRole('tabpanel', { name: 'Search' }).textContent,
-    ).not.toContain('tone.wav')
-    expect(screen.queryByRole('button', { name: 'Import folder' })).toBeNull()
-    expect(screen.queryByRole('table')).toBeNull()
+      within(search).queryByRole('button', { name: 'Import folder' }),
+    ).toBeNull()
+    expect(
+      within(search).queryByRole('columnheader', { name: 'File name' }),
+    ).toBeNull()
+    expect(within(search).queryByRole('cell', { name: 'tone.wav' })).toBeNull()
+    expect(
+      within(search).getByRole('columnheader', { name: 'File' }),
+    ).toBeTruthy()
 
     selectTab('Library')
     expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged', ''])
@@ -264,13 +271,16 @@ describe('library screen', () => {
     expect(screen.queryByRole('table')).toBeNull()
 
     selectTab('Search')
+    const search = screen.getByRole('tabpanel', { name: 'Search' })
+    expect(search.textContent).not.toContain('tone.wav')
+    expect(search.textContent).not.toContain('door.wav')
     expect(
-      screen.getByRole('tabpanel', { name: 'Search' }).textContent,
-    ).not.toContain('tone.wav')
+      within(search).queryByRole('columnheader', { name: 'File name' }),
+    ).toBeNull()
+    expect(within(search).queryByRole('cell')).toBeNull()
     expect(
-      screen.getByRole('tabpanel', { name: 'Search' }).textContent,
-    ).not.toContain('door.wav')
-    expect(screen.queryByRole('table')).toBeNull()
+      within(search).getByRole('columnheader', { name: 'File' }),
+    ).toBeTruthy()
   })
 
   it('asks before resetting the database and then clears the library', async () => {
@@ -373,6 +383,8 @@ describe('library screen', () => {
 function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
   return {
     listLibrary: async () => [],
+    searchText: async () => [],
+    findSimilar: async () => [],
     importFolder: async () => null,
     onLibraryChanged: () => () => {},
     onLibraryNotice: () => () => {},

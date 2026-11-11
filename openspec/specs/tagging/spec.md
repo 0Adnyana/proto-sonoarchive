@@ -6,7 +6,7 @@ TBD
 ## Requirements
 ### Requirement: A Library row opens on Tag
 
-Selecting a Library row SHALL open that file on the Tag screen and SHALL show its file name. Until a row is selected, Tag SHALL show no imported file name. Search SHALL show no imported file name.
+Selecting a Library row or a search result SHALL open that file on the Tag screen and SHALL show its file name. Until a file is opened, Tag SHALL show no imported file name. Before a search query, Search SHALL show no imported file name.
 
 #### Scenario: Selecting a row opens the file
 
@@ -17,6 +17,11 @@ Selecting a Library row SHALL open that file on the Tag screen and SHALL show it
 
 - **WHEN** the user opens Tag before selecting a row
 - **THEN** Tag shows no imported file name
+
+#### Scenario: A search result opens the file
+
+- **WHEN** the user clicks a search result
+- **THEN** the Tag screen shows that file's name
 
 ### Requirement: Play and Stop use the stored file
 
