@@ -6,29 +6,29 @@ TBD
 
 ## Requirements
 
-### Requirement: Desktop shell opens three empty screens
+### Requirement: Desktop shell opens one library
 
-The desktop app SHALL open one window with three screens named Library, Tag, and Search. Each screen SHALL be selectable from a tab. Those screens SHALL appear after the React renderer starts. The Library screen SHALL show the import control and the files stored by this app. The Tag screen SHALL show an imported file only after that file is opened. The Search screen SHALL show an imported file only as a row of the current search results, and SHALL show none before a query.
+The desktop app SHALL open one window whose screen is the library. That screen SHALL appear after the React renderer starts. The library SHALL show the import control and the files stored by this app. The window SHALL NOT contain a tab for Library, Tag, or Search. The metadata slideover SHALL show an imported file only after that file is opened. Before a search query, the library SHALL list the stored files. After a query, the library table SHALL list a file only as a row of the current results.
 
-#### Scenario: Renderer lists the three screens
+#### Scenario: Renderer shows the library and no screen tabs
 
 - **WHEN** the React renderer has started
-- **THEN** it contains a tab and a panel for Library, a tab and a panel for Tag, and a tab and a panel for Search
+- **THEN** it shows the library and does not contain a tab for Library, Tag, or Search
 
 #### Scenario: The HTML document is a mount point
 
 - **WHEN** the renderer HTML is read before the script runs
 - **THEN** it contains one mount node and does not contain a tab or a panel for Library, Tag, or Search
 
-#### Scenario: Selecting a tab shows that screen
+#### Scenario: Opening a file keeps the library on screen
 
-- **WHEN** the user selects the Tag tab
-- **THEN** the Tag panel is visible and the Library and Search panels are hidden
+- **WHEN** the user opens a stored file
+- **THEN** the slideover shows that file and the library table remains shown
 
-#### Scenario: Library can list files while the other screens stay empty
+#### Scenario: Library lists files before a search
 
 - **WHEN** at least one file has been imported and the user has not run a search
-- **THEN** the Library panel shows that file and the Tag and Search panels still show no imported files
+- **THEN** the library table shows that file and the slideover shows no imported file
 
 ### Requirement: Main process can reach the worker
 

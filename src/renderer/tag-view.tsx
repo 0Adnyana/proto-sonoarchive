@@ -23,12 +23,13 @@ import { errorText, type LibraryBridge } from './library'
 import { catalogOption, nextUntaggedPath, suggestionLabel } from './tag'
 
 type TagViewProps = {
-  file: LibraryFile | null
+  file: LibraryFile
   files: readonly LibraryFile[]
   catalog: readonly UcsEntry[]
   notice: string
   bridge: Pick<LibraryBridge, 'saveLabel' | 'mediaUrl'>
   onOpen: (path: string) => void
+  onFindSimilar: () => void
 }
 
 export function TagView({
@@ -38,34 +39,19 @@ export function TagView({
   notice,
   bridge,
   onOpen,
+  onFindSimilar,
 }: TagViewProps) {
   return (
-    <section className="flex max-w-2xl flex-col gap-4">
-      <h1 className="text-lg font-semibold">Tag</h1>
-      {file ? (
-        <TagEditor
-          key={file.path}
-          file={file}
-          files={files}
-          catalog={catalog}
-          notice={notice}
-          bridge={bridge}
-          onOpen={onOpen}
-        />
-      ) : (
-        <>
-          <p className="text-sm text-muted-foreground">
-            Select a file in Library.
-          </p>
-          <div>
-            <Button type="button" disabled>
-              Play
-            </Button>
-          </div>
-          <p role="status">{notice}</p>
-        </>
-      )}
-    </section>
+    <TagEditor
+      key={file.path}
+      file={file}
+      files={files}
+      catalog={catalog}
+      notice={notice}
+      bridge={bridge}
+      onOpen={onOpen}
+      onFindSimilar={onFindSimilar}
+    />
   )
 }
 
@@ -76,7 +62,8 @@ function TagEditor({
   notice,
   bridge,
   onOpen,
-}: TagViewProps & { file: LibraryFile }) {
+  onFindSimilar,
+}: TagViewProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const initial = choiceFromLabel(file)
   const [rank, setRank] = useState(initial.rank)
@@ -160,11 +147,13 @@ function TagEditor({
   }
 
   return (
-    <>
-      <p className="text-sm font-medium">{file.name}</p>
-      <div>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2">
         <Button type="button" onClick={() => void onPlayStop()}>
           {playing ? 'Stop' : 'Play'}
+        </Button>
+        <Button type="button" variant="outline" onClick={onFindSimilar}>
+          Find similar to selected file
         </Button>
       </div>
       {file.suggestions.length > 0 ? (
@@ -265,7 +254,7 @@ function TagEditor({
       <p role="status">{saveStatus || notice}</p>
       {/* biome-ignore lint/a11y/useMediaCaption: the file being played is the sound effect */}
       <audio ref={audioRef} hidden />
-    </>
+    </div>
   )
 }
 

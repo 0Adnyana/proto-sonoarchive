@@ -62,6 +62,10 @@ describe('library screen', () => {
     ).toBeTruthy()
     expect(screen.getByRole('columnheader', { name: 'Status' })).toBeTruthy()
     expect(screen.getByRole('columnheader', { name: 'CatID' })).toBeTruthy()
+    expect(
+      screen.queryByRole('columnheader', { name: 'Similarity' }),
+    ).toBeNull()
+    expect(screen.getByRole('textbox', { name: 'Query' })).toBeTruthy()
   })
 
   it('reports a stored import and names a file that failed', async () => {
@@ -80,11 +84,13 @@ describe('library screen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Import folder' }))
     finish({ stored: 2, failed: ['broken.wav'] })
 
-    expect(await screen.findByRole('status')).toHaveProperty(
+    expect(
+      await screen.findByRole('status', { name: 'Library status' }),
+    ).toHaveProperty(
       'textContent',
       'Stored 2 files. Could not decode broken.wav.',
     )
-    expect(screen.getByRole('status').textContent).not.toContain('analysed')
+    expect(libraryStatus().textContent).not.toContain('analysed')
     expect(formatImportStatus({ stored: 1, failed: [] })).toBe('Stored 1 file.')
   })
 
@@ -109,26 +115,26 @@ describe('library screen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Import folder' }))
     finish({ stored: 2, failed: [] })
 
-    expect(await screen.findByRole('status')).toHaveProperty(
-      'textContent',
-      'Stored 2 files.',
-    )
+    expect(
+      await screen.findByRole('status', { name: 'Library status' }),
+    ).toHaveProperty('textContent', 'Stored 2 files.')
     publish('Could not analyse tone.wav. CNN14 model is missing.')
 
     await waitFor(() => {
-      expect(screen.getByRole('status').textContent).toBe(
+      expect(libraryStatus().textContent).toBe(
         'Stored 2 files. Could not analyse tone.wav. CNN14 model is missing.',
       )
     })
   })
 
-  it('replaces the analysis count, keeps a failure beside it, and keeps the count across tabs', async () => {
+  it('replaces the analysis count, keeps a failure beside it, and keeps the count with a file open', async () => {
     let finish: (result: ImportFolderResult | null) => void = () => {}
     let publishProgress: (progress: AnalysisProgress) => void = () => {}
     let publishNotice: (notice: string) => void = () => {}
     render(
       <App
         bridge={bridge({
+          listLibrary: async () => [tone],
           importFolder: () =>
             new Promise((resolve) => {
               finish = resolve
@@ -147,33 +153,27 @@ describe('library screen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Import folder' }))
     finish({ stored: 2, failed: [] })
-    expect(await screen.findByRole('status')).toHaveProperty(
-      'textContent',
-      'Stored 2 files.',
-    )
+    expect(
+      await screen.findByRole('status', { name: 'Library status' }),
+    ).toHaveProperty('textContent', 'Stored 2 files.')
 
     publishProgress({ done: 1, total: 2 })
     await waitFor(() => {
-      expect(screen.getByRole('status').textContent).toBe(
-        'Stored 2 files. 1 / 2 analysed',
-      )
+      expect(libraryStatus().textContent).toBe('Stored 2 files. 1 / 2 analysed')
     })
 
-    selectTab('Tag')
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
+    expect(openSheet().textContent).toContain('tone.wav')
+
     publishProgress({ done: 2, total: 2 })
-    selectTab('Library')
     await waitFor(() => {
-      expect(screen.getByRole('status').textContent).toBe(
-        'Stored 2 files. 2 / 2 analysed',
-      )
+      expect(libraryStatus().textContent).toBe('Stored 2 files. 2 / 2 analysed')
     })
-    expect(screen.getByRole('status').textContent).not.toContain(
-      '1 / 2 analysed',
-    )
+    expect(libraryStatus().textContent).not.toContain('1 / 2 analysed')
 
     publishNotice('Could not analyse tone.wav. CNN14 model is missing.')
     await waitFor(() => {
-      expect(screen.getByRole('status').textContent).toBe(
+      expect(libraryStatus().textContent).toBe(
         'Stored 2 files. 2 / 2 analysed Could not analyse tone.wav. CNN14 model is missing.',
       )
     })
@@ -199,15 +199,16 @@ describe('library screen', () => {
       expect(imported).toBe(true)
     })
 
-    expect(screen.getByRole('status').textContent).toBe('')
+    expect(libraryStatus().textContent).toBe('')
     expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged', ''])
   })
 
-  it('replaces the table when the library changes and keeps it across tabs', async () => {
+  it('replaces the table when the library changes and keeps it while a file is open', async () => {
     let publish: (files: LibraryFile[]) => void = () => {}
     render(
       <App
         bridge={bridge({
+          listLibrary: async () => [tone],
           onLibraryChanged: (listener) => {
             publish = listener
             return () => {}
@@ -216,35 +217,30 @@ describe('library screen', () => {
       />,
     )
 
-    publish([tone])
     expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('cell', { name: 'tone.wav' }))
+    expect(openSheet().textContent).toContain('tone.wav')
+    expect(screen.getByRole('button', { name: 'Import folder' })).toBeTruthy()
+    expect(cellText().slice(0, 5)).toEqual([
+      'tone.wav',
+      'wav',
+      '1.5',
+      'untagged',
+      '',
+    ])
 
-    selectTab('Tag')
-    expect(
-      screen.getByRole('tabpanel', { name: 'Tag' }).textContent,
-    ).not.toContain('tone.wav')
-    expect(screen.queryByRole('button', { name: 'Import folder' })).toBeNull()
-    expect(screen.queryByRole('table')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
+    expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
 
-    selectTab('Search')
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
-    expect(search.textContent).not.toContain('tone.wav')
-    expect(
-      within(search).queryByRole('button', { name: 'Import folder' }),
-    ).toBeNull()
-    expect(
-      within(search).queryByRole('columnheader', { name: 'File name' }),
-    ).toBeNull()
-    expect(within(search).queryByRole('cell', { name: 'tone.wav' })).toBeNull()
-    expect(
-      within(search).getByRole('columnheader', { name: 'File' }),
-    ).toBeTruthy()
-
-    selectTab('Library')
-    expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'untagged', ''])
+    publish([scored])
+    expect(await screen.findByRole('cell', { name: 'door.wav' })).toBeTruthy()
+    expect(screen.queryByRole('cell', { name: 'tone.wav' })).toBeNull()
   })
 
-  it('shows a top-1 CatID and hides file names on the other tabs', async () => {
+  it('shows a top-1 CatID and keeps the stored rows while the slideover is open', async () => {
     render(<App bridge={bridge({ listLibrary: async () => [tone, scored] })} />)
 
     expect(await screen.findByRole('cell', { name: 'AERODoor' })).toBeTruthy()
@@ -261,25 +257,11 @@ describe('library screen', () => {
       'AERODoor',
     ])
 
-    selectTab('Tag')
+    fireEvent.click(screen.getByRole('cell', { name: 'tone.wav' }))
+    expect(openSheet().textContent).toContain('tone.wav')
+    expect(screen.getByRole('cell', { name: 'door.wav' })).toBeTruthy()
     expect(
-      screen.getByRole('tabpanel', { name: 'Tag' }).textContent,
-    ).not.toContain('tone.wav')
-    expect(
-      screen.getByRole('tabpanel', { name: 'Tag' }).textContent,
-    ).not.toContain('door.wav')
-    expect(screen.queryByRole('table')).toBeNull()
-
-    selectTab('Search')
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
-    expect(search.textContent).not.toContain('tone.wav')
-    expect(search.textContent).not.toContain('door.wav')
-    expect(
-      within(search).queryByRole('columnheader', { name: 'File name' }),
-    ).toBeNull()
-    expect(within(search).queryByRole('cell')).toBeNull()
-    expect(
-      within(search).getByRole('columnheader', { name: 'File' }),
+      screen.queryByRole('button', { name: 'Find similar to selected file' }),
     ).toBeTruthy()
   })
 
@@ -321,10 +303,9 @@ describe('library screen', () => {
       within(confirm).getByRole('button', { name: 'Reset database' }),
     )
 
-    expect(await screen.findByRole('status')).toHaveProperty(
-      'textContent',
-      'Database reset.',
-    )
+    expect(
+      await screen.findByRole('status', { name: 'Library status' }),
+    ).toHaveProperty('textContent', 'Database reset.')
     expect(screen.queryByRole('cell', { name: 'tone.wav' })).toBeNull()
     expect(resets).toBe(1)
   })
@@ -350,10 +331,9 @@ describe('library screen', () => {
       within(dialog).getByRole('button', { name: 'Reset database' }),
     )
 
-    expect(await screen.findByRole('status')).toHaveProperty(
-      'textContent',
-      'Could not reset the library.',
-    )
+    expect(
+      await screen.findByRole('status', { name: 'Library status' }),
+    ).toHaveProperty('textContent', 'Could not reset the library.')
     expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
     expect(
       screen
@@ -374,9 +354,10 @@ describe('library screen', () => {
       />,
     )
 
-    expect((await screen.findByRole('status')).textContent).toContain(
-      'Could not open the library.',
-    )
+    expect(
+      (await screen.findByRole('status', { name: 'Library status' }))
+        .textContent,
+    ).toContain('Could not open the library.')
   })
 })
 
@@ -397,10 +378,14 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
   }
 }
 
-function selectTab(name: string): void {
-  fireEvent.mouseDown(screen.getByRole('tab', { name }), { button: 0 })
-}
-
 function cellText(): string[] {
   return screen.getAllByRole('cell').map((cell) => cell.textContent ?? '')
+}
+
+function libraryStatus(): HTMLElement {
+  return screen.getByRole('status', { name: 'Library status' })
+}
+
+function openSheet(): HTMLElement {
+  return screen.getByRole('dialog')
 }

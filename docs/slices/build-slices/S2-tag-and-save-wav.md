@@ -4,7 +4,7 @@
 
 ## Scope
 
-- Tag screen: file name, _Play/Stop_, radio list of 5 suggestions (CatID, Category › SubCategory, score), _Other…_ dropdown with all 753 CatIDs, inputs for FXName, CreatorID, SourceID, _Save_ and _Next file_.
+- Metadata slideover (opened from a library row): file name, _Play/Stop_, radio list of 5 suggestions (CatID, Category › SubCategory, score), _Other…_ dropdown with all 753 CatIDs, inputs for FXName, CreatorID, SourceID, _Save_ and _Next file_.
 - _Save_ is disabled until a CatID is chosen and FXName is not empty.
 - `labels` table: CatID, FXName, CreatorID, SourceID, chosen rank (1–5 or manual), timestamp. File status becomes _tagged_.
 - WAV writer: one tag per field in the iXML USER block; FXName also in the bext Description. Category and SubCategory come from the `ucs` table.
@@ -15,7 +15,7 @@
 
 ## End-to-end test
 
-1. Open an F-short file in Tag, play it, pick suggestion 2, fill all three fields, Save.
+1. Open an F-short file in the metadata slideover, play it, pick suggestion 2, fill all three fields, Save.
 2. Library shows the file as _tagged_ with the chosen CatID.
 3. Open the file in Soundly: CatID, Category, SubCategory, FXName, CreatorID and SourceID are visible.
 4. The audio data chunk is byte-identical before and after Save (hash).

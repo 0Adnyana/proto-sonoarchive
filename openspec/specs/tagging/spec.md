@@ -4,28 +4,33 @@
 
 TBD
 ## Requirements
-### Requirement: A Library row opens on Tag
+### Requirement: A library row opens the metadata slideover
 
-Selecting a Library row or a search result SHALL open that file on the Tag screen and SHALL show its file name. Until a file is opened, Tag SHALL show no imported file name. Before a search query, Search SHALL show no imported file name.
+Selecting a library row or a search hit SHALL open a slideover from the right and SHALL show that file's name. The library table SHALL remain in the document. Until a file is opened, the slideover SHALL be closed and SHALL show no imported file name. The open slideover SHALL show the tag fields: *Play/Stop*, the suggestion radios when the file has suggestions, *Other…*, FXName, CreatorID, SourceID, *Rename to UCS filename*, the filename preview, *Save*, and *Next file*.
 
 #### Scenario: Selecting a row opens the file
 
-- **WHEN** the user selects a stored file in Library
-- **THEN** the Tag screen shows that file's name
+- **WHEN** the user selects a stored file in the library
+- **THEN** a slideover from the right shows that file's name and the library table remains shown
 
-#### Scenario: Tag starts without a file
+#### Scenario: The library starts with the slideover closed
 
-- **WHEN** the user opens Tag before selecting a row
-- **THEN** Tag shows no imported file name
+- **WHEN** the library is shown before a row is selected
+- **THEN** the slideover is closed and shows no imported file name
 
-#### Scenario: A search result opens the file
+#### Scenario: A search hit opens the file
 
-- **WHEN** the user clicks a search result
-- **THEN** the Tag screen shows that file's name
+- **WHEN** the user clicks a search hit
+- **THEN** the slideover shows that file's name
+
+#### Scenario: The open file shows the tag fields
+
+- **WHEN** a file is open in the slideover
+- **THEN** the slideover shows *Play/Stop*, *Other…*, FXName, CreatorID, SourceID, *Rename to UCS filename*, *Save*, and *Next file*
 
 ### Requirement: Play and Stop use the stored file
 
-*Play/Stop* SHALL play the open file from its stored path. Playback SHALL use that file as stored and SHALL leave its bytes unchanged. While audio is playing the control SHALL read *Stop*. Activating *Stop* SHALL end playback and return to the start, and the control SHALL read *Play*. With no file open the control SHALL be disabled.
+*Play/Stop* SHALL play the open file from its stored path. Playback SHALL use that file as stored and SHALL leave its bytes unchanged. While audio is playing the control SHALL read *Stop*. Activating *Stop* SHALL end playback and return to the start, and the control SHALL read *Play*. The control SHALL be shown only while the metadata slideover is open.
 
 #### Scenario: Play starts the open file
 
@@ -36,6 +41,11 @@ Selecting a Library row or a search result SHALL open that file on the Tag scree
 
 - **WHEN** the open file is playing and the user activates *Stop*
 - **THEN** playback ends at the start and the control reads *Play*
+
+#### Scenario: A closed library has no Play control
+
+- **WHEN** no file is open
+- **THEN** the library does not show *Play* or *Stop*
 
 ### Requirement: Five suggestions are a radio list
 
@@ -210,4 +220,3 @@ When *Rename to UCS filename* is ticked and a different file already has the pre
 
 - **WHEN** the user ticks *Rename to UCS filename* and the previewed path is the open file's current path
 - **THEN** *Save* succeeds, no collision error is shown, and the filename is unchanged
-

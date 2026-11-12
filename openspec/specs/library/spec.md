@@ -6,7 +6,7 @@ TBD
 ## Requirements
 ### Requirement: Library lists imported files
 
-The Library screen SHALL show a table with one row per stored file and the columns file name, format, duration, status, and CatID. Duration SHALL be shown in seconds. An untagged file SHALL show status *untagged* and its stored top-1 CatID, or an empty CatID when it has no suggestions. A tagged file SHALL show status *tagged* and the CatID stored on its label. Search SHALL show a file name only as a row of the current search results, and SHALL show no file name before a query. Tag SHALL show an imported file's name only after that file is opened.
+The Library screen SHALL show a table with one row per stored file and the columns file name, format, duration, status, and CatID, while no text-search or find-similar result is showing. Duration SHALL be shown in seconds. An untagged file SHALL show status *untagged* and its stored top-1 CatID, or an empty CatID when it has no suggestions. A tagged file SHALL show status *tagged* and the CatID stored on its label. While a text-search or find-similar result is showing, the table SHALL list those hits instead of every stored file. The metadata slideover SHALL show an imported file's name only while that file is open.
 
 #### Scenario: Imported files appear as untagged
 
@@ -23,19 +23,24 @@ The Library screen SHALL show a table with one row per stored file and the colum
 - **WHEN** a stored file has a label
 - **THEN** its status is *tagged* and its CatID cell shows the label's CatID
 
+#### Scenario: A query replaces the stored rows
+
+- **WHEN** a text query has been submitted and it returned one hit
+- **THEN** the table lists that hit and does not list a stored file that was not returned
+
 ### Requirement: Import results stay visible
 
-The Library screen SHALL show a status line for the import. The window SHALL remain usable after an import, including switching among Library, Tag, and Search.
+The Library screen SHALL show a status line for the import. The window SHALL remain usable after an import, including opening and closing the metadata slideover and submitting a search.
 
 #### Scenario: A finished import reports how many files were stored
 
 - **WHEN** an import finishes
 - **THEN** the status line reports how many files were stored
 
-#### Scenario: Switching tabs keeps the stored rows
+#### Scenario: The stored rows stay while a file is open
 
-- **WHEN** the user opens Tag after an import and then returns to Library
-- **THEN** the Library table shows the same stored rows
+- **WHEN** the user opens a file after an import and then closes the slideover
+- **THEN** the library table shows the same stored rows
 
 ### Requirement: Files survive a restart
 
@@ -102,4 +107,3 @@ The Library screen SHALL show a progress sentence while a background analysis qu
 
 - **WHEN** the Library is shown and no file has been queued for analysis
 - **THEN** the status line does not contain `analysed`
-

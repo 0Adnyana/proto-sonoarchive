@@ -6,7 +6,6 @@ import {
   render,
   screen,
   waitFor,
-  within,
 } from '@testing-library/react'
 import { toast } from 'sonner'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -75,13 +74,13 @@ const quiet: LibraryFile = {
   label: null,
 }
 
-describe('tag screen', () => {
+describe('tag slideover', () => {
   afterEach(() => {
     toast.dismiss()
     cleanup()
   })
 
-  it('opens a library row on Tag and plays it from the stored path', async () => {
+  it('opens a library row in the slideover and plays it from the stored path', async () => {
     const play = vi.fn(() => Promise.resolve())
     const pause = vi.fn()
     let currentTime = 4
@@ -106,25 +105,26 @@ describe('tag screen', () => {
       />,
     )
     expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Play' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
 
-    selectTab('Tag')
-    const empty = screen.getByRole('tabpanel', { name: 'Tag' })
-    expect(
-      (screen.getByRole('button', { name: 'Play' }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true)
-    expect(empty.textContent).not.toContain('tone.wav')
-
-    selectTab('Library')
     fireEvent.click(screen.getByRole('cell', { name: 'tone.wav' }))
 
-    const tag = screen.getByRole('tabpanel', { name: 'Tag' })
-    expect(tag.textContent).toContain('tone.wav')
+    const sheet = openSheet()
+    expect(sheet.textContent).toContain('tone.wav')
+    expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
     expect(
       await screen.findByRole('radio', { name: 'AIRBrst AIR › Burst 0.250' }),
     ).toBeTruthy()
     expect(
       screen.getByRole('radio', { name: 'AIRBlow AIR › Blow 0.500' }),
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Next file' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Find similar to selected file' }),
     ).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Play' }))
@@ -139,11 +139,18 @@ describe('tag screen', () => {
     expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
     expect(pause).toHaveBeenCalledOnce()
     expect(currentTime).toBe(0)
+  })
 
-    selectTab('Search')
-    expect(
-      screen.getByRole('tabpanel', { name: 'Search' }).textContent,
-    ).not.toContain('tone.wav')
+  it('replaces the open file when another row is clicked', async () => {
+    render(<App bridge={bridge({ listLibrary: async () => [tone, door] })} />)
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
+    expect(openSheet().textContent).toContain('tone.wav')
+
+    fireEvent.click(screen.getByRole('cell', { name: 'door.wav' }))
+    await waitFor(() => {
+      expect(openSheet().textContent).toContain('door.wav')
+    })
+    expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
   })
 
   it('keeps Save disabled until a CatID and a non-blank FXName are set', async () => {
@@ -184,12 +191,8 @@ describe('tag screen', () => {
     )
     fireEvent.click(await screen.findByRole('cell', { name: 'quiet.wav' }))
     fireEvent.click(screen.getByRole('button', { name: 'Next file' }))
-    expect(screen.getByRole('tabpanel', { name: 'Tag' }).textContent).toContain(
-      'tone.wav',
-    )
-    expect(
-      screen.getByRole('tabpanel', { name: 'Tag' }).textContent,
-    ).not.toContain('door.wav')
+    expect(openSheet().textContent).toContain('tone.wav')
+    expect(openSheet().textContent).not.toContain('door.wav')
 
     const save = () =>
       screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement
@@ -256,7 +259,6 @@ describe('tag screen', () => {
     })
     expect(await screen.findByText('Saved tone.wav as AIRBrst')).toBeTruthy()
 
-    selectTab('Library')
     expect(cellText()).toEqual([
       'tone.wav',
       'wav',
@@ -277,27 +279,12 @@ describe('tag screen', () => {
 
     fireEvent.click(screen.getByRole('cell', { name: 'tone.wav' }))
     fireEvent.click(screen.getByRole('button', { name: 'Next file' }))
-    expect(screen.getByRole('tabpanel', { name: 'Tag' }).textContent).toContain(
-      'quiet.wav',
-    )
-    expect(
-      screen.getByRole('tabpanel', { name: 'Tag' }).textContent,
-    ).not.toContain('door.wav')
+    expect(openSheet().textContent).toContain('quiet.wav')
+    expect(openSheet().textContent).not.toContain('door.wav')
 
     fireEvent.click(screen.getByRole('button', { name: 'Next file' }))
-    expect(screen.getByRole('tabpanel', { name: 'Tag' }).textContent).toContain(
-      'quiet.wav',
-    )
-    expect(
-      screen.getByRole('tabpanel', { name: 'Tag' }).textContent,
-    ).not.toContain('tone.wav')
-
-    selectTab('Search')
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
-    expect(search.textContent).not.toContain('tone.wav')
-    expect(search.textContent).not.toContain('door.wav')
-    expect(search.textContent).not.toContain('quiet.wav')
-    expect(within(search).queryByRole('cell')).toBeNull()
+    expect(openSheet().textContent).toContain('quiet.wav')
+    expect(openSheet().textContent).not.toContain('tone.wav')
   })
 
   it('fills the form from a saved rank and lists every catalog CatID under Other', async () => {
@@ -349,7 +336,6 @@ describe('tag screen', () => {
       'Field',
     )
 
-    selectTab('Library')
     fireEvent.click(screen.getByRole('cell', { name: 'door.wav' }))
     expect(
       screen
@@ -374,7 +360,7 @@ describe('tag screen', () => {
     ).toBeTruthy()
   })
 
-  it('opens a finished file on Tag and saves it while another file is still queued', async () => {
+  it('opens a finished file and saves it while another file is still queued', async () => {
     const saved: string[] = []
     let publishProgress: (progress: AnalysisProgress) => void = () => {}
     render(
@@ -395,8 +381,7 @@ describe('tag screen', () => {
 
     publishProgress({ done: 0, total: 1 })
     fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
-    const tag = screen.getByRole('tabpanel', { name: 'Tag' })
-    expect(tag.textContent).toContain('tone.wav')
+    expect(openSheet().textContent).toContain('tone.wav')
     fireEvent.click(
       await screen.findByRole('radio', { name: 'AIRBlow AIR › Blow 0.500' }),
     )
@@ -408,8 +393,9 @@ describe('tag screen', () => {
     await waitFor(() => {
       expect(saved).toEqual(['/library/tone.wav'])
     })
-    selectTab('Library')
-    expect(screen.getByRole('status').textContent).toContain('0 / 1 analysed')
+    expect(
+      screen.getByRole('status', { name: 'Library status' }).textContent,
+    ).toContain('0 / 1 analysed')
   })
 
   it('shows a thrown save error on the status line without the success toast', async () => {
@@ -434,13 +420,13 @@ describe('tag screen', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    const panel = screen.getByRole('tabpanel', { name: 'Tag' })
+    const sheet = openSheet()
     await waitFor(() => {
-      expect(panel.textContent).toContain(
+      expect(sheet.textContent).toContain(
         'Could not write the tags. The file was left unchanged.',
       )
     })
-    expect(panel.querySelector('[role="status"]')?.textContent).toBe(
+    expect(sheet.querySelector('[role="status"]')?.textContent).toBe(
       'Could not write the tags. The file was left unchanged.',
     )
     expect(screen.queryByText('Saved tone.wav as AIRBrst')).toBeNull()
@@ -466,7 +452,6 @@ describe('tag screen', () => {
     expect(screen.queryByText('AIRBrst_Creak__.wav')).toBeNull()
     expect(screen.getByText('AIRBrst_Slam__.wav')).toBeTruthy()
 
-    selectTab('Library')
     fireEvent.click(screen.getByRole('cell', { name: 'door.wav' }))
     expect(checkbox().getAttribute('aria-checked')).toBe('false')
     expect(screen.getByText('DOORWood_Creak_Ada_Field.wav')).toBeTruthy()
@@ -540,11 +525,11 @@ describe('tag screen', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    const tag = screen.getByRole('tabpanel', { name: 'Tag' })
+    const sheet = openSheet()
     await waitFor(() => {
-      expect(tag.textContent).toContain(nextName)
+      expect(sheet.textContent).toContain(nextName)
     })
-    expect(tag.textContent).not.toContain('tone.wav')
+    expect(sheet.textContent).not.toContain('tone.wav')
     expect(saved).toEqual([
       expect.objectContaining({
         path: '/library/tone.wav',
@@ -559,7 +544,6 @@ describe('tag screen', () => {
         .getAttribute('aria-checked'),
     ).toBe('false')
 
-    selectTab('Library')
     expect(screen.getAllByRole('cell', { name: nextName })).toHaveLength(1)
     expect(screen.queryByRole('cell', { name: 'tone.wav' })).toBeNull()
     expect(cellText()).toEqual([nextName, 'wav', '1.5', 'tagged', 'AIRBrst'])
@@ -597,13 +581,13 @@ describe('tag screen', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    const panel = screen.getByRole('tabpanel', { name: 'Tag' })
+    const sheet = openSheet()
     await waitFor(() => {
-      expect(panel.textContent).toContain(
+      expect(sheet.textContent).toContain(
         'A file named AIRBrst_Door slam__.wav already exists.',
       )
     })
-    expect(panel.textContent).toContain('tone.wav')
+    expect(sheet.textContent).toContain('tone.wav')
     expect(screen.queryByText('Saved tone.wav as AIRBrst')).toBeNull()
   })
 })
@@ -625,12 +609,12 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
   }
 }
 
-function selectTab(name: string): void {
-  fireEvent.mouseDown(screen.getByRole('tab', { name }), { button: 0 })
-}
-
 function cellText(): string[] {
   return screen.getAllByRole('cell').map((cell) => cell.textContent ?? '')
+}
+
+function openSheet(): HTMLElement {
+  return screen.getByRole('dialog')
 }
 
 function openOther(): void {

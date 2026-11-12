@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Toaster } from '@/components/ui/sonner'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type {
   AnalysisProgress,
   LibraryFile,
@@ -14,7 +20,6 @@ import {
   type LibraryBridge,
 } from './library'
 import { LibraryView } from './library-view'
-import { SearchView } from './search-view'
 import { TagView } from './tag-view'
 
 type AppProps = {
@@ -22,7 +27,6 @@ type AppProps = {
 }
 
 export function App({ bridge }: AppProps) {
-  const [tab, setTab] = useState('library')
   const [openPath, setOpenPath] = useState<string | null>(null)
   const [files, setFiles] = useState<LibraryFile[]>([])
   const [catalog, setCatalog] = useState<UcsEntry[]>([])
@@ -31,12 +35,18 @@ export function App({ bridge }: AppProps) {
   const [notices, setNotices] = useState<string[]>([])
   const [progress, setProgress] = useState<AnalysisProgress | null>(null)
   const [resetting, setResetting] = useState(false)
+  const [query, setQuery] = useState('')
   const [hits, setHits] = useState<SearchHit[]>([])
+  const [showingHits, setShowingHits] = useState(false)
   const [searchError, setSearchError] = useState('')
   const noticesRef = useRef<string[]>([])
   const searchRequest = useRef(0)
-  const status = formatLibraryStatus(baseStatus, notices, progress)
+  const status = formatLibraryStatus(baseStatus, notices, progress, searchError)
   const openFile = files.find((file) => file.path === openPath) ?? null
+  const openName =
+    openFile?.name ??
+    hits.find((hit) => hit.path === openPath)?.name ??
+    fileNameFromPath(openPath)
 
   useEffect(() => {
     let seenChange = false
@@ -95,7 +105,13 @@ export function App({ bridge }: AppProps) {
 
   function openLibraryFile(path: string): void {
     setOpenPath(path)
-    setTab('tag')
+  }
+
+  function clearHits(): void {
+    searchRequest.current += 1
+    setHits([])
+    setShowingHits(false)
+    setSearchError('')
   }
 
   function onReset(): void {
@@ -110,7 +126,9 @@ export function App({ bridge }: AppProps) {
         setProgress(null)
         setOpenPath(null)
         searchRequest.current += 1
+        setQuery('')
         setHits([])
+        setShowingHits(false)
         setSearchError('')
         setBaseStatus('Database reset.')
       })
@@ -130,22 +148,26 @@ export function App({ bridge }: AppProps) {
       .then((rows) => {
         if (searchRequest.current !== id) return
         setHits(rows)
+        setShowingHits(true)
         setSearchError('')
       })
       .catch((error: unknown) => {
         if (searchRequest.current !== id) return
         setHits([])
+        setShowingHits(true)
         setSearchError(errorText(error))
       })
   }
 
-  function onSearchText(query: string): void {
+  function onSearchText(): void {
+    if (query.trim() === '') return
     showSearchHits(() => bridge.searchText(query))
   }
 
   function onFindSimilar(): void {
     if (!openPath) return
     const path = openPath
+    setQuery('')
     showSearchHits(() => bridge.findSimilar(path))
   }
 
@@ -163,45 +185,65 @@ export function App({ bridge }: AppProps) {
 
   return (
     <>
-      <Tabs value={tab} onValueChange={setTab} className="gap-4 p-6">
-        <TabsList>
-          <TabsTrigger value="library">Library</TabsTrigger>
-          <TabsTrigger value="tag">Tag</TabsTrigger>
-          <TabsTrigger value="search">Search</TabsTrigger>
-        </TabsList>
-        <TabsContent value="library">
-          <LibraryView
-            files={files}
-            status={status}
-            selectedPath={openPath}
-            resetting={resetting}
-            onImport={onImport}
-            onReset={onReset}
-            onOpen={openLibraryFile}
-          />
-        </TabsContent>
-        <TabsContent value="tag">
-          <TagView
-            file={openFile}
-            files={files}
-            catalog={catalog}
-            notice={catalogNotice}
-            bridge={bridge}
-            onOpen={setOpenPath}
-          />
-        </TabsContent>
-        <TabsContent value="search">
-          <SearchView
-            openPath={openPath}
-            hits={hits}
-            message={searchError}
-            onSearchText={onSearchText}
-            onFindSimilar={onFindSimilar}
-            onOpen={openLibraryFile}
-          />
-        </TabsContent>
-      </Tabs>
+      <div className="p-6">
+        <LibraryView
+          files={files}
+          hits={hits}
+          showingHits={showingHits}
+          query={query}
+          status={status}
+          selectedPath={openPath}
+          resetting={resetting}
+          onQueryChange={setQuery}
+          onSubmitQuery={onSearchText}
+          onClearHits={clearHits}
+          onImport={onImport}
+          onReset={onReset}
+          onOpen={openLibraryFile}
+        />
+      </div>
+      <Sheet
+        modal={false}
+        open={openPath !== null}
+        onOpenChange={(open) => {
+          if (!open) setOpenPath(null)
+        }}
+      >
+        <SheetContent
+          side="right"
+          showOverlay={false}
+          className="overflow-y-auto sm:max-w-md"
+          onInteractOutside={(event) => event.preventDefault()}
+          onPointerDownOutside={(event) => event.preventDefault()}
+        >
+          <SheetHeader>
+            <SheetTitle>{openName}</SheetTitle>
+            <SheetDescription className="sr-only">
+              Edit tags for this file.
+            </SheetDescription>
+          </SheetHeader>
+          {openFile ? (
+            <div className="px-4 pb-4">
+              <TagView
+                file={openFile}
+                files={files}
+                catalog={catalog}
+                notice={catalogNotice}
+                bridge={bridge}
+                onOpen={setOpenPath}
+                onFindSimilar={onFindSimilar}
+              />
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
       <Toaster />
     </>
   )
+}
+
+function fileNameFromPath(path: string | null): string {
+  if (!path) return ''
+  const parts = path.split(/[/\\]/)
+  return parts[parts.length - 1] ?? path
 }

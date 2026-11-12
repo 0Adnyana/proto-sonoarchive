@@ -6,23 +6,33 @@ TBD
 
 ## Requirements
 
-### Requirement: Search screen starts empty
+### Requirement: The library has a search field
 
-The Search screen SHALL show a text input, a *Search* button, a *Find similar to selected file* button, and a results table whose columns are File, CatID, FXName, and Similarity. Before any query, that table SHALL show no file name. *Find similar to selected file* SHALL be disabled when no file is open.
+The library SHALL show one text field with the accessible name Query. The user SHALL submit that field with Enter. Before a query is submitted, and after results are cleared, the library table SHALL list the stored files and SHALL use the columns File name, Format, Duration (seconds), Status, and CatID. Submitting a query that is empty or only spaces SHALL leave that stored-file list in place. Submitting a non-empty query SHALL list each text-search hit in the library table, in the order returned, and SHALL add the columns FXName and Similarity. For a text-search hit the Similarity cell SHALL be empty. A hit's File name, Format, Duration, and Status SHALL come from the stored library row with the same path. *Find similar to selected file* SHALL be a control in the metadata slideover and SHALL NOT be shown while that slideover is closed.
 
-#### Scenario: Search starts with no rows
+#### Scenario: The library starts as the stored files
 
-- **WHEN** the user opens Search before running a query
-- **THEN** the table shows the columns File, CatID, FXName, and Similarity, and it shows no file name
+- **WHEN** the user views the library before running a query
+- **THEN** the table lists the stored files under File name, Format, Duration (seconds), Status, and CatID, and it has no Similarity column
 
-#### Scenario: Find similar is disabled with nothing open
+#### Scenario: Find similar is absent with nothing open
 
-- **WHEN** no file is open and the user views Search
-- **THEN** *Find similar to selected file* is disabled
+- **WHEN** no file is open
+- **THEN** *Find similar to selected file* is not shown
+
+#### Scenario: An empty query keeps the stored files
+
+- **WHEN** the user submits an empty field, or a field of only spaces
+- **THEN** the table still lists the stored files
+
+#### Scenario: A text query lists hits in the library table
+
+- **WHEN** the user submits a non-empty query
+- **THEN** the table's rows are the text-search hits, in the returned order, with the FXName and Similarity columns, and each Similarity cell is empty
 
 ### Requirement: Text search matches tagged fields
 
-*Search* SHALL return each stored file whose file name contains the query as a case-insensitive substring. *Search* SHALL also return each tagged file whose CatID, Category, SubCategory, or FXName contains the query as a case-insensitive substring. Category and SubCategory SHALL be the UCS values for that label's CatID. *Search* SHALL also return each untagged file whose rank-1 suggestion CatID, or the UCS Category or SubCategory for that CatID, contains the query as a case-insensitive substring. A tagged file SHALL NOT be returned because a suggestion contains the query. The characters `%`, `_`, and `\` in the query SHALL match themselves. A row whose file name contains the query SHALL be listed before a row that matches only on CatID, Category, SubCategory, or FXName. Inside each of those groups, results SHALL be ordered by file name, then path. Each tagged row SHALL show that file's name, its label CatID, and its FXName. Each untagged row SHALL show that file's name, its rank-1 suggestion CatID or an empty CatID when it has no rank-1 suggestion, and an empty FXName. The Similarity cell SHALL be empty. An empty query, including a query of only spaces, SHALL return no rows.
+*Search* SHALL return each stored file whose file name contains the query as a case-insensitive substring. *Search* SHALL also return each tagged file whose CatID, Category, SubCategory, or FXName contains the query as a case-insensitive substring. Category and SubCategory SHALL be the UCS values for that label's CatID. *Search* SHALL also return each untagged file whose rank-1 suggestion CatID, or the UCS Category or SubCategory for that CatID, contains the query as a case-insensitive substring. A tagged file SHALL NOT be returned because a suggestion contains the query. The characters `%`, `_`, and `\` in the query SHALL match themselves. A row whose file name contains the query SHALL be listed before a row that matches only on CatID, Category, SubCategory, or FXName. Inside each of those groups, results SHALL be ordered by file name, then path. Each tagged row SHALL show that file's name, its label CatID, and its FXName. Each untagged row SHALL show that file's name, its rank-1 suggestion CatID or an empty CatID when it has no rank-1 suggestion, and an empty FXName. The Similarity cell SHALL be empty. The text-search operation SHALL return no rows for an empty query, including a query of only spaces. The library SHALL NOT submit that empty query in place of the stored file list.
 
 #### Scenario: A word from FXName returns that file
 
@@ -61,12 +71,12 @@ The Search screen SHALL show a text input, a *Search* button, a *Find similar to
 
 #### Scenario: An empty query returns nothing
 
-- **WHEN** the user searches with an empty input, or an input of only spaces
-- **THEN** the table shows no file name
+- **WHEN** text search is invoked with an empty query, or a query of only spaces
+- **THEN** the operation returns no rows
 
 ### Requirement: Find similar uses cosine distance
 
-*Find similar to selected file* SHALL run a cosine-distance query in sqlite-vec over the stored embeddings and SHALL list matches closest first. The selected file SHALL be the file open on Tag, and that file SHALL be excluded. A file with no stored embedding SHALL NOT be returned. Each row SHALL show the file name, the label CatID when the file is tagged and otherwise the rank-1 suggestion CatID, the label FXName when the file is tagged and otherwise an empty FXName, and the cosine similarity. On the stored F-short embeddings the query SHALL return within 1 second.
+*Find similar to selected file* SHALL run a cosine-distance query in sqlite-vec over the stored embeddings and SHALL list matches closest first. The selected file SHALL be the file open in the metadata slideover, and that file SHALL be excluded. A file with no stored embedding SHALL NOT be returned. Each row SHALL show the file name, the label CatID when the file is tagged and otherwise the rank-1 suggestion CatID, the label FXName when the file is tagged and otherwise an empty FXName, and the cosine similarity. Those rows SHALL replace the library table until the user clears the results or submits a text query. On the stored F-short embeddings the query SHALL return within 1 second.
 
 #### Scenario: The twin is in the top 3
 
@@ -83,20 +93,44 @@ The Search screen SHALL show a text input, a *Search* button, a *Find similar to
 - **WHEN** find similar runs against the stored F-short embeddings
 - **THEN** the rows are returned within 1 second
 
-### Requirement: A result opens on Tag
+#### Scenario: Find similar replaces the library rows
 
-Clicking a result row SHALL open that file on the Tag screen and SHALL show its file name.
+- **WHEN** the user activates *Find similar to selected file* for the open file
+- **THEN** the library table lists those hits, including a Similarity column, and the open file is not a row
 
-#### Scenario: A click leaves Search for Tag
+### Requirement: Clearing results restores the library
 
-- **WHEN** the user clicks a result row
-- **THEN** the Tag screen shows that file's name
+While the table is showing text-search hits or find-similar hits, the library SHALL show a control that clears those results. Activating it SHALL list the stored files again, SHALL remove the FXName and Similarity columns, and SHALL leave the open slideover as it is.
 
-### Requirement: A failed query is reported on Search
+#### Scenario: Clear returns the stored files
 
-When a query fails, Search SHALL show the failure message and SHALL show no file name.
+- **WHEN** hits are listed and the user clears the results
+- **THEN** the table lists the stored files and has no Similarity column
+
+#### Scenario: Clear leaves the open file open
+
+- **WHEN** a file is open in the slideover and the user clears the results
+- **THEN** the slideover still shows that file's name
+
+### Requirement: A result opens in the slideover
+
+Clicking a hit SHALL open that file in the metadata slideover and SHALL show its file name. The library table SHALL stay in the document.
+
+#### Scenario: A click opens the file beside the list
+
+- **WHEN** the user clicks a hit
+- **THEN** the slideover shows that file's name and the library table is still shown
+
+### Requirement: A failed query is reported on the library
+
+When a text query or a find-similar query fails, the library status line SHALL include the failure message and the table SHALL show no file name. The failure message SHALL NOT remove an import result or a progress sentence already on that status line.
 
 #### Scenario: The bridge rejects the query
 
-- **WHEN** *Search* fails
-- **THEN** Search shows the failure message and shows no file name
+- **WHEN** text search fails
+- **THEN** the status line includes the failure message and the table shows no file name
+
+#### Scenario: A failure keeps the import result
+
+- **WHEN** the status line already reports how many files were stored and text search then fails
+- **THEN** the status line still reports how many files were stored and includes the failure message

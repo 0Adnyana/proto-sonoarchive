@@ -48,15 +48,17 @@ export function formatLibraryStatus(
   base: string,
   notices: readonly string[],
   progress: AnalysisProgress | null = null,
+  extra = '',
 ): string {
   const withProgress = appendAnalysisNotice(
     base,
     formatAnalysisProgress(progress),
   )
-  return notices.reduce(
+  const withNotices = notices.reduce(
     (status, notice) => appendAnalysisNotice(status, notice),
     withProgress,
   )
+  return appendAnalysisNotice(withNotices, extra)
 }
 
 export function errorText(error: unknown): string {

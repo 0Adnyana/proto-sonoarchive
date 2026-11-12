@@ -46,38 +46,30 @@ const doorHit: SearchHit = {
   similarity: 0.91,
 }
 
-describe('search screen', () => {
+describe('library search', () => {
   afterEach(() => {
     cleanup()
   })
 
-  it('starts with column headers and no file names', async () => {
+  it('starts with stored files and no Similarity column', async () => {
     render(<App bridge={bridge({ listLibrary: async () => [tone] })} />)
     expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
-
-    selectTab('Search')
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
+    expect(screen.getByRole('columnheader', { name: 'File name' })).toBeTruthy()
     expect(
-      within(search).getByRole('columnheader', { name: 'File' }),
-    ).toBeTruthy()
+      screen.queryByRole('columnheader', { name: 'Similarity' }),
+    ).toBeNull()
     expect(
-      within(search).getByRole('columnheader', { name: 'CatID' }),
-    ).toBeTruthy()
-    expect(
-      within(search).getByRole('columnheader', { name: 'FXName' }),
-    ).toBeTruthy()
-    expect(
-      within(search).getByRole('columnheader', { name: 'Similarity' }),
-    ).toBeTruthy()
-    expect(search.textContent).not.toContain('tone.wav')
-    expect(within(search).queryByRole('cell')).toBeNull()
+      screen.queryByRole('button', { name: 'Find similar to selected file' }),
+    ).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Clear results' })).toBeNull()
   })
 
-  it('fills the table from a text query', async () => {
+  it('fills the library table from a text query', async () => {
     const queries: string[] = []
     render(
       <App
         bridge={bridge({
+          listLibrary: async () => [tone],
           searchText: async (query) => {
             queries.push(query)
             return [toneHit]
@@ -85,22 +77,55 @@ describe('search screen', () => {
         })}
       />,
     )
+    expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
 
-    selectTab('Search')
     fireEvent.change(screen.getByRole('textbox', { name: 'Query' }), {
       target: { value: 'slam' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Search' }))
 
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
     expect(
-      await within(search).findByRole('cell', { name: 'tone.wav' }),
+      await screen.findByRole('columnheader', { name: 'Similarity' }),
     ).toBeTruthy()
-    expect(cellText(search)).toEqual(['tone.wav', 'AIRBrst', 'Door slam', ''])
+    expect(screen.getByRole('columnheader', { name: 'FXName' })).toBeTruthy()
+    expect(cellText()).toEqual([
+      'tone.wav',
+      'wav',
+      '1.5',
+      'tagged',
+      'AIRBrst',
+      'Door slam',
+      '',
+    ])
     expect(queries).toEqual(['slam'])
   })
 
-  it('disables find similar until a file is open', async () => {
+  it('keeps stored files when the query is empty or only spaces', async () => {
+    let calls = 0
+    render(
+      <App
+        bridge={bridge({
+          listLibrary: async () => [tone],
+          searchText: async () => {
+            calls += 1
+            return [toneHit]
+          },
+        })}
+      />,
+    )
+    expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+
+    submitQuery('')
+    submitQuery('   ')
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
+    expect(calls).toBe(0)
+    expect(cellText()).toEqual(['tone.wav', 'wav', '1.5', 'tagged', 'AIRBrst'])
+    expect(
+      screen.queryByRole('columnheader', { name: 'Similarity' }),
+    ).toBeNull()
+  })
+
+  it('finds similar from the open file and replaces the table', async () => {
     const paths: string[] = []
     render(
       <App
@@ -114,33 +139,37 @@ describe('search screen', () => {
       />,
     )
     expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
-
-    selectTab('Search')
-    const disabled = screen.getByRole('button', {
-      name: 'Find similar to selected file',
-    }) as HTMLButtonElement
-    expect(disabled.disabled).toBe(true)
-    fireEvent.click(disabled)
-    expect(paths).toEqual([])
-
-    selectTab('Library')
-    fireEvent.click(screen.getByRole('cell', { name: 'tone.wav' }))
-    selectTab('Search')
-    const enabled = screen.getByRole('button', {
-      name: 'Find similar to selected file',
-    }) as HTMLButtonElement
-    expect(enabled.disabled).toBe(false)
-    fireEvent.click(enabled)
-
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
     expect(
-      await within(search).findByRole('cell', { name: 'door.wav' }),
-    ).toBeTruthy()
-    expect(cellText(search)).toEqual(['door.wav', 'AERODoor', '', '0.910'])
+      screen.queryByRole('button', { name: 'Find similar to selected file' }),
+    ).toBeNull()
+
+    fireEvent.click(screen.getByRole('cell', { name: 'tone.wav' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Query' }), {
+      target: { value: 'slam' },
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Find similar to selected file' }),
+    )
+
+    expect(await screen.findByRole('cell', { name: 'door.wav' })).toBeTruthy()
+    expect(cellText()).toEqual([
+      'door.wav',
+      '',
+      '',
+      '',
+      'AERODoor',
+      '',
+      '0.910',
+    ])
     expect(paths).toEqual([tone.path])
+    expect(screen.getByRole('textbox', { name: 'Query' })).toHaveProperty(
+      'value',
+      '',
+    )
+    expect(openSheet().textContent).toContain('tone.wav')
   })
 
-  it('opens the file on Tag when a result is clicked', async () => {
+  it('opens a hit in the slideover beside the list', async () => {
     render(
       <App
         bridge={bridge({
@@ -151,23 +180,47 @@ describe('search screen', () => {
     )
     expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
 
-    selectTab('Search')
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
-    fireEvent.click(
-      await within(search).findByRole('cell', { name: 'tone.wav' }),
-    )
+    submitQuery('slam')
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
 
-    expect(screen.getByRole('tabpanel', { name: 'Tag' }).textContent).toContain(
-      'tone.wav',
-    )
+    expect(openSheet().textContent).toContain('tone.wav')
+    expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: 'Query' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Import folder' })).toBeTruthy()
   })
 
-  it('shows a failed query and no file name', async () => {
+  it('clears hits, restores stored files, and leaves the slideover open', async () => {
+    render(
+      <App
+        bridge={bridge({
+          listLibrary: async () => [tone],
+          searchText: async () => [toneHit, doorHit],
+        })}
+      />,
+    )
+    expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+
+    submitQuery('slam')
+    expect(await screen.findByRole('cell', { name: 'door.wav' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('cell', { name: 'tone.wav' }))
+    expect(openSheet().textContent).toContain('tone.wav')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear results' }))
+    expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
+    expect(screen.queryByRole('cell', { name: 'door.wav' })).toBeNull()
+    expect(
+      screen.queryByRole('columnheader', { name: 'Similarity' }),
+    ).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Clear results' })).toBeNull()
+    expect(openSheet().textContent).toContain('tone.wav')
+  })
+
+  it('shows a failed query on the library status line and no file name', async () => {
     let calls = 0
     render(
       <App
         bridge={bridge({
+          listLibrary: async () => [tone],
           searchText: async () => {
             calls += 1
             if (calls === 1) return [toneHit]
@@ -176,56 +229,77 @@ describe('search screen', () => {
         })}
       />,
     )
+    expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
 
-    selectTab('Search')
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
+    submitQuery('slam')
     expect(
-      await within(search).findByRole('cell', { name: 'tone.wav' }),
+      await screen.findByRole('columnheader', { name: 'FXName' }),
     ).toBeTruthy()
+    expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
+    submitQuery('slam')
     await waitFor(() => {
-      expect(within(search).getByRole('status').textContent).toContain(
+      expect(libraryStatus().textContent).toContain(
         'Could not search the library.',
       )
     })
-    expect(search.textContent).not.toContain('tone.wav')
-    expect(within(search).queryByRole('cell', { name: 'tone.wav' })).toBeNull()
+    expect(screen.queryByRole('cell', { name: 'tone.wav' })).toBeNull()
   })
 
-  it('keeps hits when the user switches tabs', async () => {
+  it('keeps an import result when text search fails', async () => {
+    let finish: (result: { stored: number; failed: string[] } | null) => void =
+      () => {}
+    render(
+      <App
+        bridge={bridge({
+          importFolder: () =>
+            new Promise((resolve) => {
+              finish = resolve
+            }),
+          searchText: async () => {
+            throw new Error('Could not search the library.')
+          },
+        })}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import folder' }))
+    finish({ stored: 2, failed: [] })
+    expect(
+      await screen.findByRole('status', { name: 'Library status' }),
+    ).toHaveProperty('textContent', 'Stored 2 files.')
+
+    submitQuery('slam')
+    await waitFor(() => {
+      expect(libraryStatus().textContent).toBe(
+        'Stored 2 files. Could not search the library.',
+      )
+    })
+    expect(screen.queryByRole('cell', { name: 'tone.wav' })).toBeNull()
+  })
+
+  it('replaces find-similar hits with a later text query', async () => {
     render(
       <App
         bridge={bridge({
           listLibrary: async () => [tone],
+          findSimilar: async () => [doorHit],
           searchText: async () => [toneHit],
         })}
       />,
     )
+    fireEvent.click(await screen.findByRole('cell', { name: 'tone.wav' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Find similar to selected file' }),
+    )
+    expect(await screen.findByRole('cell', { name: 'door.wav' })).toBeTruthy()
+
+    submitQuery('slam')
     expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
-
-    selectTab('Search')
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
-    expect(
-      await within(screen.getByRole('tabpanel', { name: 'Search' })).findByRole(
-        'cell',
-        { name: 'tone.wav' },
-      ),
-    ).toBeTruthy()
-
-    selectTab('Library')
-    expect(screen.getByRole('cell', { name: 'tone.wav' })).toBeTruthy()
-    selectTab('Search')
-    expect(
-      within(screen.getByRole('tabpanel', { name: 'Search' })).getByRole(
-        'cell',
-        { name: 'tone.wav' },
-      ),
-    ).toBeTruthy()
+    expect(screen.queryByRole('cell', { name: 'door.wav' })).toBeNull()
   })
 
-  it('clears hits when the library is reset', async () => {
+  it('clears hits and the query when the library is reset', async () => {
     let publish: (rows: LibraryFile[]) => void = () => {}
     render(
       <App
@@ -244,16 +318,12 @@ describe('search screen', () => {
     )
     expect(await screen.findByRole('cell', { name: 'tone.wav' })).toBeTruthy()
 
-    selectTab('Search')
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
+    submitQuery('slam')
     expect(
-      await within(screen.getByRole('tabpanel', { name: 'Search' })).findByRole(
-        'cell',
-        { name: 'tone.wav' },
-      ),
+      await screen.findByRole('columnheader', { name: 'Similarity' }),
     ).toBeTruthy()
+    fireEvent.click(screen.getByRole('cell', { name: 'tone.wav' }))
 
-    selectTab('Library')
     fireEvent.click(screen.getByRole('button', { name: 'Reset database' }))
     const confirm = await screen.findByRole('alertdialog', {
       name: 'Reset database?',
@@ -261,15 +331,19 @@ describe('search screen', () => {
     fireEvent.click(
       within(confirm).getByRole('button', { name: 'Reset database' }),
     )
-    expect(await screen.findByRole('status')).toHaveProperty(
-      'textContent',
-      'Database reset.',
-    )
+    expect(
+      await screen.findByRole('status', { name: 'Library status' }),
+    ).toHaveProperty('textContent', 'Database reset.')
 
-    selectTab('Search')
-    const search = screen.getByRole('tabpanel', { name: 'Search' })
-    expect(search.textContent).not.toContain('tone.wav')
-    expect(within(search).queryByRole('cell')).toBeNull()
+    expect(screen.queryByRole('cell', { name: 'tone.wav' })).toBeNull()
+    expect(
+      screen.queryByRole('columnheader', { name: 'Similarity' }),
+    ).toBeNull()
+    expect(screen.getByRole('textbox', { name: 'Query' })).toHaveProperty(
+      'value',
+      '',
+    )
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })
 
@@ -290,12 +364,20 @@ function bridge(overrides: Partial<LibraryBridge> = {}): LibraryBridge {
   }
 }
 
-function selectTab(name: string): void {
-  fireEvent.mouseDown(screen.getByRole('tab', { name }), { button: 0 })
+function submitQuery(value: string): void {
+  const input = screen.getByRole('textbox', { name: 'Query' })
+  fireEvent.change(input, { target: { value } })
+  fireEvent.keyDown(input, { key: 'Enter' })
 }
 
-function cellText(panel: HTMLElement): string[] {
-  return within(panel)
-    .getAllByRole('cell')
-    .map((cell) => cell.textContent ?? '')
+function cellText(): string[] {
+  return screen.getAllByRole('cell').map((cell) => cell.textContent ?? '')
+}
+
+function libraryStatus(): HTMLElement {
+  return screen.getByRole('status', { name: 'Library status' })
+}
+
+function openSheet(): HTMLElement {
+  return screen.getByRole('dialog')
 }
